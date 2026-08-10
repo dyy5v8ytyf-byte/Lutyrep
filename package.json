@@ -1,0 +1,12 @@
+{
+  "name": "lutyrep",
+  "version": "1.0.0",
+  "description": "Wwtec Reparatur-Auftragsverwaltung - gemeinsam genutzte Web-App mit Datenbank",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}

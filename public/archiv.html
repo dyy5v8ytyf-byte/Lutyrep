@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Archiv – abgeschlossene Checklisten – Lutyrep</title>
+<style>
+  :root{
+    --navy:#2E4057; --navy-dark:#1c2a3a; --light:#EEF2F7; --border:#D6DEE7;
+    --green:#2f9e63; --red:#c94b4b; --amber:#c98a2c; --text:#242c35; --muted:#6b7684;
+  }
+  *{box-sizing:border-box;}
+  button{-webkit-appearance:none;appearance:none;-webkit-tap-highlight-color:rgba(46,64,87,.15);touch-action:manipulation;cursor:pointer;}
+  input{touch-action:manipulation;}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;background:#f4f6f9;color:var(--text);padding:24px 16px 60px;-webkit-text-size-adjust:100%;}
+  .wrap{max-width:900px;margin:0 auto;}
+  .backlink{display:inline-block;margin-bottom:10px;font-size:.82rem;color:var(--muted);text-decoration:none;}
+  .backlink:hover{color:var(--navy);}
+  header{background:linear-gradient(135deg,var(--navy),var(--navy-dark));color:#fff;border-radius:14px;padding:22px 26px;margin-bottom:18px;}
+  header h1{margin:0 0 4px;font-size:1.4rem;}
+  header p{margin:0;color:#cbd6e2;font-size:.88rem;}
+
+  .search-box{background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:16px;}
+  .search-box label{display:block;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:6px;}
+  .search-box input{width:100%;border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:16px;font-family:inherit;}
+
+  table{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden;border:1px solid var(--border);}
+  thead th{background:var(--light);text-align:left;padding:10px 12px;font-size:.72rem;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);border-bottom:1px solid var(--border);}
+  tbody td{padding:10px 12px;font-size:.87rem;border-bottom:1px solid #eef1f5;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:#fbfcfe;cursor:pointer;}
+  .empty{padding:26px;text-align:center;color:var(--muted);font-size:.88rem;}
+
+  .detail{display:none;background:#fff;border:1px solid var(--border);border-radius:12px;padding:20px 22px;margin-top:16px;}
+  .detail.show{display:block;}
+  .detail-actions{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
+  .detail-actions button{border:none;border-radius:8px;padding:9px 16px;font-size:.85rem;font-weight:600;cursor:pointer;}
+  .btn-back{background:#fff;color:var(--navy);border:1px solid var(--border)!important;}
+  .btn-print{background:var(--navy);color:#fff;}
+
+  .d-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;background:var(--light);border-radius:10px;padding:14px 16px;margin-bottom:16px;}
+  .d-meta div label{display:block;font-size:.7rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:2px;}
+  .d-meta div span{font-size:.92rem;font-weight:600;}
+
+  .d-section{margin-bottom:18px;}
+  .d-section h3{font-size:.85rem;text-transform:uppercase;letter-spacing:.03em;color:var(--navy);margin:0 0 8px;border-bottom:1px solid var(--border);padding-bottom:6px;}
+  .d-checklist{font-size:.87rem;line-height:1.7;}
+  .d-checklist .ok{color:var(--green);}
+  .d-checklist .no{color:var(--muted);}
+  .d-text{background:var(--light);border-radius:8px;padding:8px 10px;font-size:.85rem;margin:4px 0 10px;white-space:pre-wrap;}
+  .d-text-label{font-weight:600;font-size:.82rem;}
+
+  .photo-thumbs{display:flex;gap:10px;flex-wrap:wrap;}
+  .photo-thumb{width:120px;height:120px;border-radius:8px;overflow:hidden;border:1px solid var(--border);}
+  .photo-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+
+  .parts-list .row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px dashed #e8edf3;font-size:.87rem;}
+
+  .kv-result{background:var(--light);border:1px solid var(--border);border-radius:9px;padding:12px 14px;font-size:.86rem;}
+  .kv-result .total{font-size:1.05rem;font-weight:800;color:var(--navy-dark);margin-top:4px;}
+
+  @media print{
+    .backlink,.search-box,table,.detail-actions{display:none;}
+    body{background:#fff;padding:0;}
+    .detail{border:none;padding:0;}
+  }
+  @media (max-width:480px){
+    body{padding:14px 10px 40px;}
+    thead th, tbody td{padding:7px 7px;font-size:.8rem;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="backlink" href="index.html">← zur Auftragsübersicht</a>
+  <header>
+    <h1>Archiv – abgeschlossene Checklisten</h1>
+    <p>Jede mit „Auftrag abschließen &amp; drucken" abgeschlossene Checkliste wird hier unter ihrer Seriennummer gespeichert.</p>
+  </header>
+
+  <div class="search-box">
+    <label>Suche (Seriennummer, Kunde oder Gerät)</label>
+    <input type="text" id="searchInput" placeholder="z. B. SN-12345">
+  </div>
+
+  <table id="listTable">
+    <thead>
+      <tr><th>Seriennummer</th><th>Kunde</th><th>Gerät</th><th>Status</th><th>Archiviert am</th></tr>
+    </thead>
+    <tbody id="tbody"><tr><td colspan="5" class="empty">Lädt…</td></tr></tbody>
+  </table>
+
+  <div class="detail" id="detail"></div>
+</div>
+
+<script>
+(function(){
+  const CHECK_LABELS = {
+    c1b1: 'Foto von Gerät angefertigt',
+    c1b2: 'Komponenten fotografiert & aufgelistet',
+    c1c: 'Seriennummer, WAWI-Nr. und Komponenten erfasst',
+    c1d: 'Gerät ins Regal Halle „Reparaturen" gebracht',
+    c2a: 'Gerät säubern',
+    c2b: 'Sichtprüfung',
+    c2c: 'Funktionstest unter Spannung',
+    c2d: 'Bericht / Checkliste – Fehlerbeschreibung (Techniker)',
+    c3a: 'Genauere Ermittlung des Fehlerbildes',
+    c3b: 'Benötigte Austausch-Komponenten identifiziert',
+    c3d: 'Lagerbestand geprüft, angepasst und aktuell gehalten',
+    c3f: 'Komponenten ausgetauscht',
+    c3e: 'Funktionstest unter Spannung (nach Instandsetzung)',
+    c4a: 'Sichtkontrolle / Endkontrolle in der Halle',
+    c4b: 'Vollständigkeit Zubehör & Komponenten geprüft',
+    c4c: 'Verpackt & versandfertig',
+    c4d: 'Versand durchgeführt'
+  };
+  const CHECK_STEPS = [
+    { titel: 'Schritt 1 – Eingang', ids: ['c1b1','c1b2','c1c','c1d'] },
+    { titel: 'Schritt 2 – Werkstatt-Eingangsprüfung', ids: ['c2a','c2b','c2c','c2d'] },
+    { titel: 'Schritt 3 – E-Werkstatt', ids: ['c3a','c3b','c3d','c3f','c3e'] },
+    { titel: 'Schritt 4 – Endkontrolle & Versand', ids: ['c4a','c4b','c4c','c4d'] }
+  ];
+  const TEXT_LABELS = {
+    ta_fehler_kunde: 'Fehlerbeschreibung (Kunde)',
+    ta_komponenten_eingang: 'Mitgelieferte Komponenten',
+    ta_fehler_techniker: 'Fehlerbeschreibung (Techniker)',
+    ta_austausch_komponenten: 'Benötigte Austausch-Komponenten',
+    fehlerbildRueck: 'Fehlerbild bei erneuter Instandsetzung'
+  };
+
+  function fmtEUR(n){ return (n||0).toLocaleString('de-DE', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' €'; }
+  function fmtDate(iso){
+    const d = new Date(iso);
+    return d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}) + ' ' + d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+  }
+  function esc(s){ return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+  let alleEintraege = [];
+
+  async function ladeListe(){
+    const res = await fetch('/api/archiv');
+    alleEintraege = await res.json();
+    renderListe(alleEintraege);
+  }
+
+  function renderListe(eintraege){
+    const tbody = document.getElementById('tbody');
+    if(!eintraege.length){
+      tbody.innerHTML = '<tr><td colspan="5" class="empty">Noch keine abgeschlossene Checkliste im Archiv – ein Auftrag landet hier, sobald er über „Auftrag abschließen &amp; drucken" beendet wird.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = eintraege.map(e => `
+      <tr data-id="${e.id}">
+        <td>${esc(e.serien) || '–'}</td>
+        <td>${esc(e.kunde) || '–'}</td>
+        <td>${esc(e.geraet) || '–'}</td>
+        <td>${esc(e.status) || '–'}</td>
+        <td>${fmtDate(e.archiviertAm)}</td>
+      </tr>
+    `).join('');
+    tbody.querySelectorAll('tr').forEach(tr=>{
+      tr.addEventListener('click', ()=> zeigeDetail(tr.dataset.id));
+    });
+  }
+
+  document.getElementById('searchInput').addEventListener('input', (e)=>{
+    const q = e.target.value.trim().toLowerCase();
+    if(!q){ renderListe(alleEintraege); return; }
+    renderListe(alleEintraege.filter(x =>
+      (x.serien||'').toLowerCase().includes(q) ||
+      (x.kunde||'').toLowerCase().includes(q) ||
+      (x.geraet||'').toLowerCase().includes(q)
+    ));
+  });
+
+  async function zeigeDetail(id){
+    const res = await fetch('/api/archiv/' + id);
+    if(!res.ok){ return; }
+    const e = await res.json();
+    const d = e.daten || {};
+    const checks = d.checks || {};
+    const texts = d.texts || {};
+    const staff = d.staff || {};
+    const ersatzteile = d.ersatzteile || [];
+    const testSeg = d.testSeg || {};
+    const fotos = d.fotos || [];
+    const state = d.state || {};
+
+    let html = '';
+    html += `<div class="detail-actions">
+      <button class="btn-back" type="button" id="backBtn">← Zurück zur Liste</button>
+      <button class="btn-print" type="button" id="printDetailBtn">Diese Ansicht drucken</button>
+    </div>`;
+    html += `<div class="d-meta">
+      <div><label>Kunde</label><span>${esc(e.kunde) || '–'}</span></div>
+      <div><label>Gerätetyp</label><span>${esc(e.geraet) || '–'}</span></div>
+      <div><label>Seriennummer</label><span>${esc(e.serien) || '–'}</span></div>
+      <div><label>WAWI-Nr.</label><span>${esc(e.wawi) || '–'}</span></div>
+      <div><label>Status bei Abschluss</label><span>${esc(e.status) || '–'}</span></div>
+      <div><label>Archiviert am</label><span>${fmtDate(e.archiviertAm)}</span></div>
+    </div>`;
+
+    if(fotos.length){
+      html += `<div class="d-section"><h3>Fotos (Wareneingang)</h3><div class="photo-thumbs">${
+        fotos.map((src,i)=>`<div class="photo-thumb"><img src="${src}" alt="Foto ${i+1}"></div>`).join('')
+      }</div></div>`;
+    }
+
+    html += `<div class="d-section"><h3>Ja/Nein-Entscheidungen</h3><div class="d-checklist">
+      Vorabinfo Kunde: <b>${state.vorabinfo ? esc(state.vorabinfo) : '–'}</b><br>
+      Kostenvoranschlag nötig: <b>${state.kvDecision ? esc(state.kvDecision) : '–'}</b><br>
+      Kundenfreigabe erhalten: <b>${state.freigabeErhalten ? 'Ja' : 'Nein'}</b><br>
+      Test insgesamt i.O.: <b>${state.testok ? esc(state.testok) : '–'}</b><br>
+      Standardkopf – Schall: <b>${testSeg.schall === 'ok' ? 'i.O.' : testSeg.schall === 'bad' ? 'n.i.O.' : '–'}</b> ·
+      Standardkopf – Reset: <b>${testSeg.reset === 'ok' ? 'i.O.' : testSeg.reset === 'bad' ? 'n.i.O.' : '–'}</b>
+    </div></div>`;
+
+    html += `<div class="d-section"><h3>Checkliste</h3><div class="d-checklist">`;
+    CHECK_STEPS.forEach(step=>{
+      html += `<div style="font-weight:700;margin-top:6px;">${step.titel}</div>`;
+      step.ids.forEach(id=>{
+        const done = !!checks[id];
+        html += `<div class="${done ? 'ok' : 'no'}">${done ? '✓' : '○'} ${esc(CHECK_LABELS[id] || id)}</div>`;
+      });
+    });
+    html += `</div></div>`;
+
+    const texteVorhanden = Object.keys(TEXT_LABELS).filter(id => (texts[id] || '').trim());
+    if(texteVorhanden.length){
+      html += `<div class="d-section"><h3>Notizen</h3>`;
+      texteVorhanden.forEach(id=>{
+        html += `<div class="d-text-label">${esc(TEXT_LABELS[id])}</div><div class="d-text">${esc(texts[id])}</div>`;
+      });
+      html += `</div>`;
+    }
+
+    if(ersatzteile.length){
+      html += `<div class="d-section"><h3>Verwendete Ersatzteile</h3><div class="parts-list">${
+        ersatzteile.map(p=>`<div class="row"><span>${esc(p.name)} — Menge: ${esc(p.qty)}</span><span>EK: ${fmtEUR(p.ekPreis||0)}</span></div>`).join('')
+      }</div></div>`;
+    }
+
+    if(d.kvResultHtml){
+      html += `<div class="d-section"><h3>Kostenvoranschlag</h3><div class="kv-result">${d.kvResultHtml}</div></div>`;
+    }
+
+    const staffZeilen = Object.keys(staff).map(k=>{
+      const s = staff[k];
+      if(!s || (!s.mitarbeiter && !s.minuten)) return '';
+      return `${k.replace('step','Schritt ')}: ${esc(s.mitarbeiter || '–')} – ${esc(s.minuten || 0)} Min.`;
+    }).filter(Boolean);
+    if(staffZeilen.length){
+      html += `<div class="d-section"><h3>Mitarbeiter &amp; Arbeitszeit</h3><div class="d-checklist">${staffZeilen.join('<br>')}</div></div>`;
+    }
+
+    const detail = document.getElementById('detail');
+    detail.innerHTML = html;
+    detail.classList.add('show');
+    detail.scrollIntoView({ behavior:'smooth', block:'start' });
+
+    document.getElementById('backBtn').addEventListener('click', ()=>{
+      detail.classList.remove('show');
+      detail.innerHTML = '';
+    });
+    document.getElementById('printDetailBtn').addEventListener('click', ()=>window.print());
+  }
+
+  ladeListe();
+})();
+</script>
+</body>
+</html>

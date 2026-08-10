@@ -1,0 +1,1272 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reparatur-Checkliste – Wwtec (Lutyrep)</title>
+<style>
+  :root{
+    --navy:#2E4057;
+    --navy-dark:#1c2a3a;
+    --light:#EEF2F7;
+    --border:#D6DEE7;
+    --green:#2f9e63;
+    --red:#c94b4b;
+    --amber:#c98a2c;
+    --text:#242c35;
+    --muted:#6b7684;
+  }
+  *{box-sizing:border-box;}
+  /* iOS/Safari: verhindert, dass ein Tap erst "abgefangen" wird (300ms-Verzögerung/Doppel-Tap-Zoom)
+     und setzt die native Button-Optik zurück, die auf iOS sonst Klicks manchmal seltsam wirken lässt. */
+  button{
+    -webkit-appearance:none; appearance:none;
+    -webkit-tap-highlight-color:rgba(46,64,87,.15);
+    touch-action:manipulation;
+    cursor:pointer;
+  }
+  input, select, textarea{ touch-action:manipulation; }
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+    background:#f4f6f9;
+    color:var(--text);
+    padding:24px 16px 80px;
+    -webkit-text-size-adjust:100%;
+  }
+  .wrap{max-width:880px;margin:0 auto;}
+  .backlink{display:inline-block;margin-bottom:10px;font-size:.82rem;color:var(--muted);text-decoration:none;}
+  .backlink:hover{color:var(--navy);}
+  header{
+    background:linear-gradient(135deg,var(--navy),var(--navy-dark));
+    color:#fff;
+    border-radius:14px;
+    padding:24px 28px;
+    margin-bottom:20px;
+  }
+  header h1{margin:0 0 4px;font-size:1.5rem;}
+  header p{margin:0;color:#cbd6e2;font-size:.9rem;}
+
+  .status-bar{
+    display:flex;align-items:center;gap:14px;
+    margin-top:16px;flex-wrap:wrap;
+  }
+  .badge{
+    display:inline-flex;align-items:center;gap:6px;
+    background:rgba(255,255,255,.12);
+    padding:6px 12px;border-radius:20px;
+    font-size:.82rem;font-weight:600;
+  }
+  .badge.state{background:#fff;color:var(--navy);}
+  .badge.save{background:rgba(255,255,255,.12);font-weight:500;}
+  .progress-track{
+    flex:1;min-width:140px;height:8px;background:rgba(255,255,255,.2);border-radius:6px;overflow:hidden;
+  }
+  .progress-fill{height:100%;background:#7fd3a4;width:0%;transition:width .3s;}
+  .progress-pct{font-size:.82rem;color:#e4ebf3;min-width:34px;text-align:right;}
+  .time-total{font-size:.82rem;color:#e4ebf3;}
+
+  .meta-grid{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+    gap:10px;background:#fff;border-radius:12px;padding:16px 18px;margin-bottom:14px;
+    border:1px solid var(--border);
+  }
+  .meta-grid label{display:block;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:4px;}
+  .meta-grid input{
+    width:100%;border:1px solid var(--border);border-radius:7px;padding:7px 9px;font-size:.9rem;font-family:inherit;
+  }
+
+  .roster-box{
+    background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px 18px;margin-bottom:20px;
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  }
+  .roster-box label{font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);}
+  .roster-box input[type=text]{border:1px solid var(--border);border-radius:7px;padding:6px 9px;font-size:.85rem;font-family:inherit;flex:1;min-width:140px;}
+  .roster-box button{border:none;background:var(--navy);color:#fff;border-radius:7px;padding:6px 14px;font-size:.82rem;font-weight:600;cursor:pointer;}
+  .roster-list{font-size:.8rem;color:var(--muted);width:100%;}
+  .roster-list span{display:inline-block;background:var(--light);border-radius:12px;padding:2px 10px;margin:3px 4px 0 0;}
+
+  .card{
+    background:#fff;border:1px solid var(--border);border-radius:12px;
+    margin-bottom:16px;overflow:hidden;transition:opacity .2s;
+  }
+  .card.disabled{opacity:.45;pointer-events:none;}
+  .card-head{
+    display:flex;align-items:center;gap:10px;
+    background:var(--light);padding:12px 18px;border-bottom:1px solid var(--border);
+  }
+  .step-num{
+    width:26px;height:26px;border-radius:50%;background:var(--navy);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;flex-shrink:0;
+  }
+  .card-head h2{margin:0;font-size:1rem;color:var(--navy-dark);}
+  .card-head .sub{margin-left:auto;font-size:.75rem;color:var(--muted);}
+  .card-body{padding:16px 18px;}
+
+  .subhead{font-weight:700;font-size:.85rem;color:var(--navy);text-transform:uppercase;letter-spacing:.03em;margin:14px 0 6px;}
+  .subhead:first-child{margin-top:0;}
+  .subblock{border:1px dashed var(--border);border-radius:10px;padding:10px 12px 4px;margin-bottom:10px;transition:opacity .2s;}
+  .subblock.disabled{opacity:.4;pointer-events:none;}
+  .subblock-note{font-size:.78rem;color:var(--muted);margin:-4px 0 10px;}
+
+  .item{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px dashed #e8edf3;flex-wrap:wrap;}
+  .item:last-child{border-bottom:none;}
+  .item input[type=checkbox]{
+    width:19px;height:19px;margin-top:1px;accent-color:var(--green);flex-shrink:0;cursor:pointer;
+  }
+  .item label{font-size:.92rem;cursor:pointer;line-height:1.4;}
+  .item textarea, .item input[type=text]{
+    width:100%;margin-top:6px;border:1px solid var(--border);border-radius:7px;
+    padding:7px 9px;font-size:.87rem;font-family:inherit;resize:vertical;
+  }
+  .item-full{width:100%;flex:1 1 100%;}
+
+  .photo-upload-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px;}
+  .btn-photo{
+    display:inline-block;border:1px solid var(--navy);background:#fff;color:var(--navy);border-radius:7px;
+    padding:7px 14px;font-size:.82rem;font-weight:600;cursor:pointer;user-select:none;
+  }
+  .btn-photo:disabled, .btn-photo.is-disabled{opacity:.4;cursor:not-allowed;pointer-events:none;}
+  .photo-hint{font-size:.76rem;color:var(--muted);}
+  .photo-thumbs{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;}
+  .photo-thumb{position:relative;width:92px;height:92px;border-radius:8px;overflow:hidden;border:1px solid var(--border);}
+  .photo-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+  .photo-thumb .photo-remove{
+    position:absolute;top:2px;right:2px;width:22px;height:22px;border-radius:50%;
+    border:none;background:rgba(28,42,58,.75);color:#fff;font-size:.85rem;line-height:1;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+  }
+
+  .mem-select{
+    width:100%;border:1px solid var(--border);border-radius:7px;padding:5px 8px;
+    font-size:.78rem;font-family:inherit;background:#fbfcfd;color:var(--muted);margin-top:6px;
+  }
+
+  .decision{
+    background:#fbf7ee;border:1px solid #ecd9ad;border-radius:9px;padding:12px 14px;margin-top:8px;
+  }
+  .decision .q{font-weight:700;font-size:.9rem;margin-bottom:8px;color:#7a5a12;}
+  .toggle-group{display:flex;gap:8px;flex-wrap:wrap;}
+  .toggle-group button{
+    border:1px solid var(--border);background:#fff;padding:7px 16px;border-radius:20px;
+    font-size:.85rem;cursor:pointer;font-weight:600;color:var(--text);
+  }
+  .toggle-group button.active-ja{background:var(--green);color:#fff;border-color:var(--green);}
+  .toggle-group button.active-nein{background:var(--red);color:#fff;border-color:var(--red);}
+  .branch{margin-top:10px;padding:10px 12px;border-left:3px solid var(--navy);background:#f7f9fc;border-radius:0 8px 8px 0;font-size:.87rem;display:none;}
+  .branch.show{display:block;}
+
+  .kv-gate{
+    display:flex;align-items:center;gap:10px;background:#eef7f0;border:1px solid #bfe3c8;
+    border-radius:9px;padding:12px 14px;margin-top:10px;
+  }
+  .kv-gate input[type=checkbox]{width:20px;height:20px;accent-color:var(--green);cursor:pointer;}
+  .kv-gate label{font-weight:700;font-size:.9rem;color:#1f7a48;cursor:pointer;}
+
+  .kv-amount{font-size:.85rem;color:var(--navy);margin-top:6px;}
+  .kv-amount b{font-size:1rem;}
+
+  .test-row{display:flex;align-items:center;gap:10px;padding:6px 0;flex-wrap:wrap;}
+  .test-row .name{font-size:.9rem;min-width:170px;}
+  .seg{display:flex;border:1px solid var(--border);border-radius:7px;overflow:hidden;}
+  .seg button{border:none;background:#fff;padding:5px 12px;font-size:.8rem;cursor:pointer;}
+  .seg button.active-ok{background:var(--green);color:#fff;}
+  .seg button.active-bad{background:var(--red);color:#fff;}
+
+  .parts-add{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;align-items:center;}
+  .parts-add input[type=text]{flex:2;min-width:160px;border:1px solid var(--border);border-radius:7px;padding:7px 9px;font-size:.87rem;font-family:inherit;}
+  .parts-add input[type=number]{width:80px;border:1px solid var(--border);border-radius:7px;padding:7px 9px;font-size:.87rem;font-family:inherit;}
+  .parts-add button{border:none;background:var(--navy);color:#fff;border-radius:7px;padding:7px 14px;font-size:.85rem;font-weight:600;cursor:pointer;}
+  .part-info{font-size:.78rem;color:var(--muted);margin-top:4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .part-info input[type=number]{width:70px;border:1px solid var(--border);border-radius:6px;padding:3px 6px;font-size:.78rem;}
+  .parts-list{margin-top:8px;font-size:.87rem;}
+  .parts-list .row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px dashed #e8edf3;}
+  .parts-list .row button{border:none;background:none;color:var(--red);cursor:pointer;font-size:.85rem;font-weight:700;}
+
+  .kv-btn{
+    border:none;background:var(--navy-dark);color:#fff;border-radius:8px;padding:10px 18px;
+    font-size:.87rem;font-weight:700;cursor:pointer;margin-top:12px;
+  }
+  .kv-result{
+    background:var(--light);border:1px solid var(--border);border-radius:9px;padding:12px 14px;margin-top:10px;font-size:.86rem;display:none;
+  }
+  .kv-result.show{display:block;}
+  .kv-result .total{font-size:1.1rem;font-weight:800;color:var(--navy-dark);margin-top:4px;}
+
+  .staff-row{
+    display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;
+    background:var(--light);border-radius:9px;padding:12px 14px;margin-top:14px;
+  }
+  .staff-row > div{flex:1;min-width:140px;}
+  .staff-row label{display:block;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:4px;}
+  .staff-row select, .staff-row input{
+    width:100%;border:1px solid var(--border);border-radius:7px;padding:7px 9px;font-size:.87rem;font-family:inherit;background:#fff;
+  }
+
+  .final-banner{
+    border-radius:12px;padding:16px 18px;margin-top:12px;font-weight:700;font-size:.95rem;
+    display:none;align-items:center;gap:10px;
+  }
+  .final-banner.show{display:flex;}
+  .final-banner.ok{background:#e5f6ec;color:#1f7a48;border:1px solid #b6e3c8;}
+  .final-banner.wait{background:#fbf1de;color:#8a5c0f;border:1px solid #ecd9ad;}
+
+  /* Bewusst NICHT "position:sticky": ein am Bildschirmrand fixierter Balken legt sich beim
+     Scrollen auf schmalen (mobilen) Bildschirmen über die Formularinhalte und verdeckt
+     Text/Kästchen darunter. Der Werkzeugleiste steht daher normal im Textfluss am Ende der Seite. */
+  .toolbar{
+    display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;
+    background:#f4f6f9;
+    padding:14px 0 4px;
+    border-top:1px solid var(--border);
+    margin-top:6px;
+  }
+  .toolbar button{
+    border:none;border-radius:8px;padding:12px 18px;font-size:.9rem;font-weight:600;cursor:pointer;
+    flex:1 1 auto;min-width:150px;
+  }
+  .btn-print{background:var(--navy);color:#fff;}
+  .btn-reset{background:#fff;color:var(--red);border:1px solid var(--red)!important;}
+
+  .note{font-size:.78rem;color:var(--muted);margin:-6px 0 18px;}
+
+  /* Eigenes Dialogfenster statt window.confirm()/prompt() – Browser-native Dialoge werden in
+     eingebetteten Ansichten (z. B. Cowork-Vorschau) teils blockiert und würden Buttons dann
+     wirkungslos wirken lassen. */
+  .modal-overlay{
+    display:none; position:fixed; inset:0; background:rgba(28,42,58,.55);
+    align-items:center; justify-content:center; z-index:1000; padding:20px;
+  }
+  .modal-overlay.show{display:flex;}
+  .modal-box{
+    background:#fff; border-radius:12px; padding:20px 22px; max-width:400px; width:100%;
+    box-shadow:0 12px 40px rgba(0,0,0,.25);
+  }
+  .modal-msg{font-size:.92rem;line-height:1.5;color:var(--text);white-space:pre-line;margin-bottom:12px;}
+  .modal-input-wrap input{
+    width:100%;border:1px solid var(--border);border-radius:8px;padding:10px 12px;
+    font-size:16px;font-family:inherit;margin-bottom:6px;
+  }
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:10px;}
+  .modal-actions button{border:none;border-radius:8px;padding:10px 16px;font-size:.87rem;font-weight:600;cursor:pointer;}
+  .modal-btn-ok{background:var(--navy-dark);color:#fff;}
+  .modal-btn-cancel{background:#fff;color:var(--muted);border:1px solid var(--border)!important;}
+
+  .js-error-banner{
+    display:none; background:#c94b4b; color:#fff; font-size:.78rem; line-height:1.5;
+    padding:10px 14px; border-radius:10px; margin-bottom:14px; white-space:pre-line;
+  }
+  .js-error-banner.show{display:block;}
+
+  @media print{
+    body{background:#fff;padding:0;}
+    .toolbar,.backlink{display:none;}
+    .card{break-inside:avoid;border-color:#999;}
+    header{background:var(--navy)!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    .btn-photo{display:none;}
+    .photo-thumb .photo-remove{display:none;}
+    .photo-thumb{width:130px;height:130px;}
+  }
+
+  /* ---- Mobile (Smartphones) ---- */
+  @media (max-width: 480px){
+    body{padding:14px 10px 40px;}
+    header{padding:18px 18px;border-radius:12px;}
+    header h1{font-size:1.25rem;}
+    .card-body{padding:14px;}
+    .meta-grid{grid-template-columns:1fr 1fr;padding:14px;gap:8px 10px;}
+    .staff-row{flex-direction:column;align-items:stretch;}
+    .staff-row > div{min-width:0;}
+    .toolbar button{min-width:0;flex:1 1 45%;}
+    /* Eingabefelder mind. 16px, sonst zoomt iOS Safari beim Antippen automatisch hinein
+       und das Layout wirkt danach verschoben/überlappend. */
+    input, select, textarea, button{font-size:16px;}
+    .toggle-group button, .seg button{font-size:.85rem;}
+    .parts-list .row{flex-wrap:wrap;gap:4px 10px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="backlink" href="index.html">← zur Auftragsübersicht</a>
+
+  <div class="js-error-banner" id="jsErrorBanner"></div>
+
+  <header>
+    <h1>Reparatur-Checkliste</h1>
+    <p>Digitaler Ablauf – Wareneingang bis Versand · Wwtec</p>
+    <div class="status-bar">
+      <span class="badge state" id="statusBadge">Neuer Auftrag</span>
+      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+      <span class="progress-pct" id="progressPct">0%</span>
+      <span class="time-total" id="timeTotal">Σ Arbeitszeit: 0 Min. (0,00 Std.)</span>
+      <span class="badge save" id="saveBadge">gespeichert ✓</span>
+    </div>
+  </header>
+
+  <div class="meta-grid">
+    <div><label>Datum / Uhrzeit</label><input type="text" id="m_datum"></div>
+    <div><label>Kunde</label><input type="text" id="m_kunde"></div>
+    <div><label>Gerätetyp</label><input type="text" id="m_geraet"></div>
+    <div><label>Seriennummer</label><input type="text" id="m_serien"></div>
+    <div><label>WAWI-Nr.</label><input type="text" id="m_wawi"></div>
+  </div>
+
+  <div class="roster-box">
+    <label>Mitarbeiter&nbsp;hinzufügen:</label>
+    <input type="text" id="newMitarbeiter" placeholder="Name eingeben...">
+    <button id="addMitarbeiterBtn" type="button">+ Hinzufügen</button>
+    <div class="roster-list" id="rosterList">Noch keine Mitarbeiter erfasst – oben eintragen, danach in jedem Schritt auswählbar.</div>
+  </div>
+  <datalist id="arbeitszeit-liste"></datalist>
+
+  <!-- SCHRITT 1 -->
+  <div class="card" id="card1">
+    <div class="card-head"><div class="step-num">1</div><h2>Eingang (Wareneingang / Reparaturannahme)</h2></div>
+    <div class="card-body">
+      <div class="decision">
+        <div class="q">a) Vorabinfo Kunde?</div>
+        <div class="toggle-group" data-group="vorabinfo">
+          <button data-val="ja" type="button">Ja</button>
+          <button data-val="nein" type="button">Nein</button>
+        </div>
+        <div class="branch" id="branch-vorabinfo-ja">
+          <label style="font-weight:600;">Fehlerbeschreibung (Kunde)</label>
+          <textarea rows="2" class="item-full" id="ta_fehler_kunde" placeholder="Vom Kunden mitgeteilte Fehlerbeschreibung..."></textarea>
+        </div>
+      </div>
+
+      <div class="item">
+        <input type="checkbox" id="c1b1"><label for="c1b1">b) Foto von Gerät angefertigt</label>
+        <div class="item-full">
+          <div class="photo-upload-row">
+            <input type="file" id="fotoInput" accept="image/*" multiple style="display:none;">
+            <label class="btn-photo" id="fotoAddBtn" for="fotoInput">📷 Foto hinzufügen</label>
+            <span class="photo-hint" id="fotoHint">0 / 3 Fotos</span>
+          </div>
+          <div class="photo-thumbs" id="fotoThumbs"></div>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox" id="c1b2">
+        <div class="item-full">
+          <label for="c1b2">Komponenten fotografiert &amp; aufgelistet</label>
+          <textarea rows="2" id="ta_komponenten_eingang" placeholder="Mitgelieferte Komponenten (Kabel, Schallkopf, Sonotroden, Al-Koffer, sonstiges...)"></textarea>
+        </div>
+      </div>
+      <div class="item">
+        <input type="checkbox" id="c1c"><label for="c1c">c) Seriennummer, WAWI-Nr. und Komponenten erfasst (siehe Kopfdaten oben)</label>
+      </div>
+      <div class="item">
+        <input type="checkbox" id="c1d"><label for="c1d"><strong>Gerät ins Regal Halle „Reparaturen" gebracht</strong></label>
+      </div>
+
+      <div class="staff-row">
+        <div><label>Mitarbeiter</label><select class="staff-select" data-step="1"><option value="">-- auswählen --</option></select></div>
+        <div><label>Arbeitszeit (Min.)</label><input type="number" min="0" step="5" class="staff-time" list="arbeitszeit-liste" data-step="1" placeholder="0"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCHRITT 2 -->
+  <div class="card" id="card2">
+    <div class="card-head"><div class="step-num">2</div><h2>Werkstatt – Eingangsprüfung</h2></div>
+    <div class="card-body">
+      <div class="item"><input type="checkbox" id="c2a"><label for="c2a">Gerät säubern</label></div>
+      <div class="item"><input type="checkbox" id="c2b"><label for="c2b">Sichtprüfung</label></div>
+      <div class="item"><input type="checkbox" id="c2c"><label for="c2c">Funktionstest unter Spannung</label></div>
+      <div class="item">
+        <input type="checkbox" id="c2d">
+        <div class="item-full">
+          <label for="c2d">Bericht / Checkliste – Fehlerbeschreibung (Techniker)</label>
+          <textarea rows="2" id="ta_fehler_techniker" placeholder="Festgestellte Fehler / Befund..."></textarea>
+        </div>
+      </div>
+
+      <div class="decision">
+        <div class="q">Kann Kostenvoranschlag (KV) erstellt werden?</div>
+        <div class="toggle-group" data-group="kvDecision">
+          <button data-val="ja" type="button">Ja</button>
+          <button data-val="nein" type="button">Nein</button>
+        </div>
+        <div class="branch" id="branch-kv-nein">
+          Kein Kostenvoranschlag möglich/nötig – weiter direkt zur endgültigen Instandsetzung in der E-Werkstatt (Schritt 3).
+        </div>
+        <div class="branch" id="branch-kv-ja">
+          Freigabe Kunde wie gehabt: Weiter zu Schritt 3, dort wird der KV aus Fehlerbild, Ersatzteilen und Arbeitszeit erstellt.
+          <div class="kv-amount">KV-Betrag: <b id="kvBetragAnzeige">– noch nicht erstellt –</b></div>
+          <div class="kv-gate" style="margin-top:10px;">
+            <input type="checkbox" id="freigabeErhalten">
+            <label for="freigabeErhalten">Freigabe des Kunden erhalten → schaltet endgültige Instandsetzung frei</label>
+          </div>
+        </div>
+      </div>
+      <div class="final-banner wait" id="banner-wait-kv">⏳ Wartet auf Kundenfreigabe des Kostenvoranschlags – endgültige Instandsetzung gesperrt, bis Freigabe erteilt ist</div>
+
+      <div class="staff-row">
+        <div><label>Mitarbeiter</label><select class="staff-select" data-step="2"><option value="">-- auswählen --</option></select></div>
+        <div><label>Arbeitszeit (Min.)</label><input type="number" min="0" step="5" class="staff-time" list="arbeitszeit-liste" data-step="2" placeholder="0"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCHRITT 3 -->
+  <div class="card disabled" id="card3">
+    <div class="card-head"><div class="step-num">3</div><h2>E-Werkstatt – Diagnose, KV &amp; Instandsetzung</h2><span class="sub" id="ewLoopBadge"></span></div>
+    <div class="card-body">
+
+      <div class="subhead">Diagnose &amp; Kostenvoranschlag</div>
+      <div class="item"><input type="checkbox" id="c3a"><label for="c3a">Genauere Ermittlung des Fehlerbildes</label></div>
+      <div class="item">
+        <input type="checkbox" id="c3b">
+        <div class="item-full">
+          <label for="c3b">Benötigte Austausch-Komponenten identifiziert</label>
+          <textarea rows="2" id="ta_austausch_komponenten" placeholder="Welche Komponenten müssen getauscht werden?"></textarea>
+        </div>
+      </div>
+
+      <div class="item-full" style="padding:8px 0;">
+        <label style="font-weight:600;font-size:.92rem;">Benötigte Ersatzteile (Lagerabgleich)</label>
+        <div class="parts-add">
+          <input type="text" id="partName" list="ersatzteile-liste" placeholder="Ersatzteil wählen oder eingeben...">
+          <input type="number" id="partQty" min="1" value="1" placeholder="Menge">
+          <button id="addPartBtn" type="button">+ Hinzufügen</button>
+        </div>
+        <datalist id="ersatzteile-liste"></datalist>
+        <div class="part-info" id="partInfo" style="display:none;">
+          Lagerbestand aktuell: <span id="partBestandText">–</span> Stk ·
+          anpassen: <input type="number" id="partBestandAdjust" min="0"> ·
+          EK-Preis: <span id="partPreisText">–</span>
+        </div>
+        <div class="parts-list" id="partsList"></div>
+      </div>
+
+      <div class="item"><input type="checkbox" id="c3d"><label for="c3d">Lagerbestand geprüft, angepasst und aktuell gehalten</label></div>
+
+      <button class="kv-btn" id="createKvBtn" type="button">📋 Kostenvoranschlag (KV) aus Materialien &amp; Arbeitszeit erstellen</button>
+      <div class="kv-hint" id="kvHint" style="display:none;color:var(--red);font-size:.82rem;font-weight:600;margin-top:8px;"></div>
+      <div class="kv-result" id="kvResult"></div>
+
+      <div class="subhead">Endgültige Instandsetzung</div>
+      <div class="subblock-note">Wird freigeschaltet, sobald kein KV nötig ist oder die Kundenfreigabe (Schritt 2) erteilt wurde.</div>
+      <div class="subblock disabled" id="phaseB">
+        <div class="item"><input type="checkbox" id="c3f"><label for="c3f">Komponenten ausgetauscht</label></div>
+        <div class="item"><input type="checkbox" id="c3e"><label for="c3e">Funktionstest unter Spannung</label></div>
+        <div class="test-row">
+          <span class="name">Standardkopf – Schall</span>
+          <div class="seg" data-testgroup="schall"><button data-val="ok" type="button">i.O.</button><button data-val="bad" type="button">n.i.O.</button></div>
+        </div>
+        <div class="test-row">
+          <span class="name">Standardkopf – Reset</span>
+          <div class="seg" data-testgroup="reset"><button data-val="ok" type="button">i.O.</button><button data-val="bad" type="button">n.i.O.</button></div>
+        </div>
+
+        <div class="decision" style="margin-top:14px;">
+          <div class="q">Test insgesamt in Ordnung (i.O.)?</div>
+          <div class="toggle-group" data-group="testok">
+            <button data-val="ja" type="button">Ja</button>
+            <button data-val="nein" type="button">Nein</button>
+          </div>
+          <div class="branch" id="branch-testok-ja">
+            Weiter zu Schritt 4 – Endkontrolle in der Halle.
+          </div>
+          <div class="branch" id="branch-testok-nein">
+            <label style="font-weight:600;">Erneute Instandsetzung nötig – Hinweis Fehlerbild (Beschreibung)</label>
+            <textarea rows="2" class="item-full" id="fehlerbildRueck" placeholder="Fehlerbild beschreiben..."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="staff-row">
+        <div><label>Mitarbeiter</label><select class="staff-select" data-step="3"><option value="">-- auswählen --</option></select></div>
+        <div><label>Arbeitszeit (Min.)</label><input type="number" min="0" step="5" class="staff-time" list="arbeitszeit-liste" data-step="3" placeholder="0"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCHRITT 4 -->
+  <div class="card disabled" id="card4">
+    <div class="card-head"><div class="step-num">4</div><h2>Endkontrolle Halle &amp; Versand</h2></div>
+    <div class="card-body">
+      <div class="item"><input type="checkbox" id="c4a"><label for="c4a">Sichtkontrolle / Endkontrolle in der Halle</label></div>
+      <div class="item"><input type="checkbox" id="c4b"><label for="c4b">Vollständigkeit Zubehör &amp; Komponenten geprüft</label></div>
+      <div class="item"><input type="checkbox" id="c4c"><label for="c4c">Verpackt &amp; versandfertig</label></div>
+      <div class="item"><input type="checkbox" id="c4d"><label for="c4d"><strong>Versand durchgeführt</strong></label></div>
+
+      <div class="final-banner ok" id="banner-shipped">✅ Gerät versendet – Auftrag abgeschlossen</div>
+
+      <div class="staff-row">
+        <div><label>Mitarbeiter</label><select class="staff-select" data-step="4"><option value="">-- auswählen --</option></select></div>
+        <div><label>Arbeitszeit (Min.)</label><input type="number" min="0" step="5" class="staff-time" list="arbeitszeit-liste" data-step="4" placeholder="0"></div>
+      </div>
+    </div>
+  </div>
+
+  <p class="note">Mitarbeiter, Fehlerbeschreibungen, Komponenten, Arbeitszeiten sowie Ersatzteil- und Preisangaben werden zentral auf dem Server gespeichert und stehen als Auswahl (Dropdown) allen Nutzern für spätere Aufträge zur Verfügung. Stundenlohn Reparatur: 120&nbsp;€/Std. Der Lagerbestand ist zentral (Menü „Lagerbestand verwalten") und wird hier live angepasst.</p>
+
+  <div class="toolbar">
+    <button class="btn-reset" id="resetBtn" type="button">Auftrag zurücksetzen</button>
+    <button class="btn-print" id="printBtn" type="button">Auftrag abschließen &amp; drucken</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box">
+    <div class="modal-msg" id="modalMsg"></div>
+    <div class="modal-input-wrap" id="modalInputWrap" style="display:none;">
+      <input type="text" id="modalInput" inputmode="decimal">
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn-cancel" id="modalCancelBtn" type="button">Abbrechen</button>
+      <button class="modal-btn-ok" id="modalOkBtn" type="button">OK</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  // ---- Fehler-Sichtbarkeit: eine defekte Stelle darf nicht die ganze Seite lahmlegen ----
+  // Jeder Funktionsblock unten läuft in section(...) einzeln abgesichert. Bricht einer ab,
+  // funktionieren die anderen Blöcke trotzdem weiter, und der Fehler wird oben sichtbar
+  // angezeigt (statt dass Schaltflächen einfach wirkungslos wirken).
+  const jsErrors = [];
+  function showJsErrors(){
+    const banner = document.getElementById('jsErrorBanner');
+    if(!banner) return;
+    banner.textContent = '⚠️ Technisches Problem beim Laden – bitte Screenshot senden:\n' + jsErrors.join('\n');
+    banner.classList.add('show');
+  }
+  function section(name, fn){
+    try { fn(); }
+    catch(e){ jsErrors.push(name + ': ' + (e && e.message ? e.message : e)); showJsErrors(); }
+  }
+  window.addEventListener('error', (e)=>{
+    jsErrors.push('Unerwarteter Fehler: ' + e.message);
+    showJsErrors();
+  });
+
+  const STUNDENLOHN = 120; // €/Std.
+  const params = new URLSearchParams(location.search);
+  const auftragId = params.get('id');
+  if(!auftragId){ location.href = 'index.html'; return; }
+
+  const state = { vorabinfo:null, kvDecision:null, freigabeErhalten:false, testok:null, kvBetrag:0 };
+  let ewLoops = 0;
+  let mitarbeiterListe = [];
+  let ersatzteile = [];
+  let fotos = []; // Wareneingang-Fotos, als komprimierte Base64-Bilder (max. 3)
+  const FOTOS_MAX = 3;
+  let LAGER_DB = {};
+  let MEMORY = { fehler_kunde: [], fehler_techniker: [], fehlerbild_ruecklauf: [], komponenten_eingang: [], austausch_komponenten: [], arbeitszeiten: [] };
+  let testSeg = { schall:null, reset:null };
+  let saveTimer = null;
+  let loaded = false;
+
+  // ---- Eigenes Dialogfenster (ersetzt window.confirm()/prompt(), da native Dialoge in
+  // eingebetteten Ansichten teils blockiert werden und Buttons dann wirkungslos erscheinen) ----
+  function showModal({ message, withInput = false, inputValue = '', okText = 'OK', cancelText = 'Abbrechen' }){
+    return new Promise((resolve)=>{
+      const overlay = document.getElementById('modalOverlay');
+      const msgEl = document.getElementById('modalMsg');
+      const inputWrap = document.getElementById('modalInputWrap');
+      const input = document.getElementById('modalInput');
+      const okBtn = document.getElementById('modalOkBtn');
+      const cancelBtn = document.getElementById('modalCancelBtn');
+
+      msgEl.textContent = message;
+      inputWrap.style.display = withInput ? 'block' : 'none';
+      input.value = inputValue;
+      okBtn.textContent = okText;
+      cancelBtn.textContent = cancelText;
+      overlay.classList.add('show');
+      if(withInput) setTimeout(()=>{ input.focus(); input.select(); }, 50);
+
+      function cleanup(result){
+        overlay.classList.remove('show');
+        okBtn.removeEventListener('click', onOk);
+        cancelBtn.removeEventListener('click', onCancel);
+        input.removeEventListener('keydown', onKeydown);
+        resolve(result);
+      }
+      function onOk(){ cleanup(withInput ? input.value : true); }
+      function onCancel(){ cleanup(withInput ? null : false); }
+      function onKeydown(e){ if(e.key === 'Enter'){ e.preventDefault(); onOk(); } }
+      okBtn.addEventListener('click', onOk);
+      cancelBtn.addEventListener('click', onCancel);
+      input.addEventListener('keydown', onKeydown);
+    });
+  }
+  function showConfirm(message){
+    return showModal({ message, withInput:false, okText:'Ja', cancelText:'Abbrechen' });
+  }
+  function showPromptText(message, defaultValue){
+    return showModal({ message, withInput:true, inputValue: defaultValue ?? '' });
+  }
+
+  function fmtEUR(n){ return (n||0).toLocaleString('de-DE', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' €'; }
+
+  function setAktuellesDatumWennLeer(){
+    const el = document.getElementById('m_datum');
+    if(el.value) return;
+    const now = new Date();
+    const datum = now.toLocaleDateString('de-DE', {day:'2-digit', month:'2-digit', year:'numeric'});
+    const uhrzeit = now.toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'});
+    el.value = datum + ' ' + uhrzeit;
+  }
+
+  function refreshDatalist(){
+    const dl = document.getElementById('ersatzteile-liste');
+    dl.innerHTML = '';
+    Object.keys(LAGER_DB).forEach(t=>{
+      const o = document.createElement('option');
+      o.value = t;
+      dl.appendChild(o);
+    });
+  }
+
+  // ---- API Helfer ----
+  async function apiGet(url){ const r = await fetch(url); return r.json(); }
+  async function apiPost(url, body){ const r = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)}); return r.json(); }
+  async function apiPut(url, body){ const r = await fetch(url, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)}); return r.json(); }
+
+  // ---- Gedächtnis (zentral, server-seitig) ----
+  function attachMemoryDropdown(textareaId, memKey){
+    const ta = document.getElementById(textareaId);
+    if(!ta) return;
+    const sel = document.createElement('select');
+    sel.className = 'mem-select';
+    ta.parentNode.insertBefore(sel, ta);
+
+    function refresh(){
+      sel.innerHTML = '<option value="">-- gespeicherter Eintrag (optional) --</option>' +
+        MEMORY[memKey].map((t,i)=>`<option value="${i}">${t.length>60 ? t.slice(0,60)+'…' : t}</option>`).join('');
+    }
+    sel.addEventListener('change', ()=>{
+      if(sel.value !== ''){ ta.value = MEMORY[memKey][Number(sel.value)]; scheduleSave(); }
+    });
+    ta.addEventListener('blur', async ()=>{
+      const v = ta.value.trim();
+      if(v && !MEMORY[memKey].includes(v)){
+        MEMORY[memKey].push(v);
+        refresh();
+        apiPost('/api/memory', { kategorie: memKey, wert: v });
+      }
+    });
+    ta._refreshMem = refresh;
+    refresh();
+  }
+
+  function refreshArbeitszeitListe(){
+    const dl = document.getElementById('arbeitszeit-liste');
+    dl.innerHTML = MEMORY.arbeitszeiten.map(v=>`<option value="${v}"></option>`).join('');
+  }
+
+  function initMemoryUI(){
+    attachMemoryDropdown('ta_fehler_kunde', 'fehler_kunde');
+    attachMemoryDropdown('ta_fehler_techniker', 'fehler_techniker');
+    attachMemoryDropdown('fehlerbildRueck', 'fehlerbild_ruecklauf');
+    attachMemoryDropdown('ta_komponenten_eingang', 'komponenten_eingang');
+    attachMemoryDropdown('ta_austausch_komponenten', 'austausch_komponenten');
+
+    document.querySelectorAll('.staff-time').forEach(inp=>{
+      inp.addEventListener('blur', ()=>{
+        const v = Number(inp.value);
+        if(v > 0 && !MEMORY.arbeitszeiten.includes(v)){
+          MEMORY.arbeitszeiten.push(v);
+          MEMORY.arbeitszeiten.sort((a,b)=>a-b);
+          refreshArbeitszeitListe();
+          apiPost('/api/memory', { kategorie:'arbeitszeiten', wert: String(v) });
+        }
+      });
+    });
+  }
+
+  // ---- Mitarbeiter-Verwaltung (zentral) ----
+  function renderRoster(){
+    const selects = document.querySelectorAll('.staff-select');
+    selects.forEach(sel=>{
+      const current = sel.value;
+      sel.innerHTML = '<option value="">-- auswählen --</option>' + mitarbeiterListe.map(n=>`<option value="${n}">${n}</option>`).join('');
+      if(mitarbeiterListe.includes(current)) sel.value = current;
+    });
+    const listEl = document.getElementById('rosterList');
+    listEl.innerHTML = mitarbeiterListe.length
+      ? mitarbeiterListe.map(n=>`<span>${n}</span>`).join('')
+      : 'Noch keine Mitarbeiter erfasst – oben eintragen, danach in jedem Schritt auswählbar.';
+  }
+
+  section('Mitarbeiter-Erfassung', ()=>{
+    document.getElementById('addMitarbeiterBtn').addEventListener('click', async ()=>{
+      const inp = document.getElementById('newMitarbeiter');
+      const name = inp.value.trim();
+      if(!name) return;
+      inp.value = '';
+      mitarbeiterListe = await apiPost('/api/mitarbeiter', { name });
+      renderRoster();
+    });
+    document.getElementById('newMitarbeiter').addEventListener('keydown', e=>{
+      if(e.key === 'Enter'){ e.preventDefault(); document.getElementById('addMitarbeiterBtn').click(); }
+    });
+  });
+
+  // ---- Wareneingang-Fotos (max. 3, vor dem Speichern verkleinert/komprimiert) ----
+  function renderFotos(){
+    const wrap = document.getElementById('fotoThumbs');
+    const hint = document.getElementById('fotoHint');
+    const addBtn = document.getElementById('fotoAddBtn');
+    if(!wrap) return;
+    wrap.innerHTML = fotos.map((src, i) =>
+      `<div class="photo-thumb"><img src="${src}" alt="Foto ${i+1}"><button type="button" class="photo-remove" data-i="${i}">×</button></div>`
+    ).join('');
+    wrap.querySelectorAll('.photo-remove').forEach(b=>{
+      b.addEventListener('click', ()=>{
+        fotos.splice(Number(b.dataset.i), 1);
+        renderFotos();
+        scheduleSave();
+      });
+    });
+    if(hint) hint.textContent = fotos.length + ' / ' + FOTOS_MAX + ' Fotos';
+    if(addBtn) addBtn.classList.toggle('is-disabled', fotos.length >= FOTOS_MAX);
+  }
+
+  function komprimiereBild(file){
+    return new Promise((resolve, reject)=>{
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error('Datei konnte nicht gelesen werden'));
+      reader.onload = () => {
+        const img = new Image();
+        img.onerror = () => reject(new Error('Bild konnte nicht geladen werden'));
+        img.onload = () => {
+          const MAX_DIM = 1280;
+          let { width, height } = img;
+          if(width > MAX_DIM || height > MAX_DIM){
+            if(width > height){ height = Math.round(height * MAX_DIM / width); width = MAX_DIM; }
+            else { width = Math.round(width * MAX_DIM / height); height = MAX_DIM; }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width; canvas.height = height;
+          canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.72));
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  section('Wareneingang-Fotos', ()=>{
+    // Auslösen über ein natives <label for="fotoInput"> statt per JS-Klick auf das
+    // versteckte Dateifeld – das öffnet den Datei-/Fotoauswahl-Dialog garantiert in
+    // jedem Browser (Safari/Edge/Chrome, Mac & Windows), unabhängig von JS-Timing.
+    document.getElementById('fotoInput').addEventListener('change', async (e)=>{
+      const files = Array.from(e.target.files || []);
+      e.target.value = ''; // erlaubt, dieselbe Datei später erneut auszuwählen
+      if(!files.length) return;
+      const platzFrei = FOTOS_MAX - fotos.length;
+      if(platzFrei <= 0){
+        await showModal({ message: 'Es sind bereits ' + FOTOS_MAX + ' Fotos hinzugefügt. Bitte zuerst ein Foto entfernen.' });
+        return;
+      }
+      const zuVerarbeiten = files.slice(0, platzFrei);
+      if(files.length > platzFrei){
+        await showModal({ message: 'Es können maximal ' + FOTOS_MAX + ' Fotos hinzugefügt werden. Nur die ersten ' + zuVerarbeiten.length + ' werden übernommen.' });
+      }
+      for(const file of zuVerarbeiten){
+        try {
+          const dataUrl = await komprimiereBild(file);
+          fotos.push(dataUrl);
+        } catch(err){
+          jsErrors.push('Foto verarbeiten: ' + (err && err.message ? err.message : err));
+          showJsErrors();
+        }
+      }
+      renderFotos();
+      scheduleSave();
+    });
+  });
+
+  // ---- Ersatzteile / Lagerabgleich (zentral) ----
+  let partNameInp, partInfoBox, partBestandText, partBestandAdjust, partPreisText;
+
+  function refreshPartInfo(){
+    const name = partNameInp.value.trim();
+    const entry = LAGER_DB[name];
+    if(entry){
+      partInfoBox.style.display = 'flex';
+      partBestandText.textContent = entry.bestand;
+      partBestandAdjust.value = entry.bestand;
+      partPreisText.textContent = entry.ekPreis != null ? fmtEUR(entry.ekPreis) : 'noch nicht erfasst';
+    } else {
+      partInfoBox.style.display = name ? 'flex' : 'none';
+      if(name){ partBestandText.textContent = 'neues Teil'; partBestandAdjust.value = 0; partPreisText.textContent = 'wird beim Hinzufügen erfragt'; }
+    }
+  }
+  section('Ersatzteil-Eingabefeld', ()=>{
+    partNameInp = document.getElementById('partName');
+    partInfoBox = document.getElementById('partInfo');
+    partBestandText = document.getElementById('partBestandText');
+    partBestandAdjust = document.getElementById('partBestandAdjust');
+    partPreisText = document.getElementById('partPreisText');
+    partNameInp.addEventListener('input', refreshPartInfo);
+    partBestandAdjust.addEventListener('change', async ()=>{
+      const name = partNameInp.value.trim();
+      if(LAGER_DB[name]){
+        LAGER_DB[name].bestand = Number(partBestandAdjust.value) || 0;
+        await apiPut('/api/lager/' + encodeURIComponent(name), { bestand: LAGER_DB[name].bestand });
+      }
+    });
+  });
+
+  function renderParts(){
+    const el = document.getElementById('partsList');
+    el.innerHTML = ersatzteile.map((p, i)=>
+      `<div class="row"><span>${p.name} — Menge: ${p.qty} · EK: ${fmtEUR(p.ekPreis||0)}</span><button data-i="${i}" type="button">entfernen</button></div>`
+    ).join('');
+    el.querySelectorAll('button').forEach(b=>{
+      b.addEventListener('click', ()=>{
+        ersatzteile.splice(Number(b.dataset.i), 1);
+        renderParts();
+        updateProgress();
+        scheduleSave();
+      });
+    });
+  }
+
+  section('Ersatzteil-hinzufügen-Button', ()=>{
+    document.getElementById('addPartBtn').addEventListener('click', async ()=>{
+      const name = partNameInp.value.trim();
+      const qtyInp = document.getElementById('partQty');
+      const qty = Number(qtyInp.value) || 1;
+      if(!name) return;
+
+      if(!LAGER_DB[name]){
+        const bestandStr = await showPromptText('Neues Ersatzteil "' + name + '" – aktueller Lagerbestand (Stk)?', '0');
+        const initBestand = Number(bestandStr) || 0;
+        const preisStr = await showPromptText('EK-Preis (€) für "' + name + '"?', '');
+        const initPreis = parseFloat((preisStr || '0').replace(',', '.')) || 0;
+        LAGER_DB[name] = { bestand: initBestand, ekPreis: initPreis };
+        refreshDatalist();
+      } else if(LAGER_DB[name].ekPreis == null){
+        const preisStr = await showPromptText('EK-Preis (€) für "' + name + '"?', '');
+        const preis = parseFloat((preisStr || '0').replace(',', '.')) || 0;
+        LAGER_DB[name].ekPreis = preis;
+      }
+
+      LAGER_DB[name].bestand = Math.max(0, LAGER_DB[name].bestand - qty);
+      ersatzteile.push({ name, qty, ekPreis: LAGER_DB[name].ekPreis });
+
+      await apiPut('/api/lager/' + encodeURIComponent(name), { bestand: LAGER_DB[name].bestand, ekPreis: LAGER_DB[name].ekPreis });
+
+      partNameInp.value = '';
+      qtyInp.value = 1;
+      refreshPartInfo();
+      renderParts();
+      updateProgress();
+      scheduleSave();
+    });
+  });
+
+  // ---- Ja/Nein Toggles ----
+  function setToggle(group, val, btnEl){
+    const groupEl = document.querySelector(`.toggle-group[data-group="${group}"]`);
+    groupEl.querySelectorAll('button').forEach(b=>{
+      b.classList.remove('active-ja','active-nein');
+    });
+    if(btnEl) btnEl.classList.add(val === 'ja' ? 'active-ja' : 'active-nein');
+    state[group] = val;
+  }
+
+  section('Ja/Nein-Auswahl (Vorabinfo, KV, Test i.O.)', ()=>{
+    document.querySelectorAll('.toggle-group').forEach(g=>{
+      const group = g.dataset.group;
+      g.querySelectorAll('button').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          setToggle(group, btn.dataset.val, btn);
+          updateBranches();
+          updateFlow();
+          updateProgress();
+          scheduleSave();
+        });
+      });
+    });
+  });
+
+  section('i.O./n.i.O.-Auswahl (Standardkopf-Tests)', ()=>{
+    document.querySelectorAll('.seg').forEach(seg=>{
+      const grp = seg.dataset.testgroup;
+      seg.querySelectorAll('button').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          seg.querySelectorAll('button').forEach(b=>b.classList.remove('active-ok','active-bad'));
+          btn.classList.add(btn.dataset.val === 'ok' ? 'active-ok' : 'active-bad');
+          testSeg[grp] = btn.dataset.val;
+          updateProgress();
+          scheduleSave();
+        });
+      });
+    });
+  });
+
+  section('Freigabe-Checkbox', ()=>{
+    document.getElementById('freigabeErhalten').addEventListener('change', (e)=>{
+      state.freigabeErhalten = e.target.checked;
+      updateFlow();
+      updateProgress();
+      scheduleSave();
+    });
+  });
+
+  // ---- KV erstellen (Materialien + Arbeitszeit) ----
+  const KV_PFLICHT_SCHRITTE = ['1','2','3'];
+
+  function fehlendeZeiten(){
+    return KV_PFLICHT_SCHRITTE.filter(step=>{
+      const inp = document.querySelector(`.staff-time[data-step="${step}"]`);
+      return !inp || !Number(inp.value) || Number(inp.value) <= 0;
+    });
+  }
+
+  async function sicherstellenEkPreise(){
+    for(const p of ersatzteile){
+      if(!p.ekPreis){
+        const preisStr = await showPromptText('EK-Preis (€) für "' + p.name + '" fehlt noch – bitte eingeben:', '');
+        const preis = parseFloat((preisStr || '0').replace(',', '.')) || 0;
+        p.ekPreis = preis;
+        if(LAGER_DB[p.name]){
+          LAGER_DB[p.name].ekPreis = preis;
+          await apiPut('/api/lager/' + encodeURIComponent(p.name), { ekPreis: preis });
+        }
+      }
+    }
+  }
+
+  section('Kostenvoranschlag-Button', ()=>{
+    document.getElementById('createKvBtn').addEventListener('click', async ()=>{
+      const hintEl = document.getElementById('kvHint');
+
+      const fehlend = fehlendeZeiten();
+      if(fehlend.length){
+        hintEl.style.display = 'block';
+        hintEl.textContent = '⚠️ Bitte erfasse alle benötigten Zeiten (Schritt ' + fehlend.join(', ') + '), bevor der Kostenvoranschlag erstellt werden kann.';
+        return;
+      }
+
+      await sicherstellenEkPreise();
+      renderParts();
+
+      hintEl.style.display = 'none';
+
+      const totalMin = computeTotalMinutes();
+      const totalStd = totalMin / 60;
+      const materialCost = ersatzteile.reduce((s,p)=> s + p.qty * (p.ekPreis||0), 0);
+      const laborCost = totalStd * STUNDENLOHN;
+      const kvTotal = materialCost + laborCost;
+      state.kvBetrag = kvTotal;
+
+      if(state.kvDecision !== 'ja'){
+        state.kvDecision = 'ja';
+        const jaBtn = document.querySelector('.toggle-group[data-group="kvDecision"] button[data-val="ja"]');
+        setToggle('kvDecision', 'ja', jaBtn);
+        updateBranches();
+      }
+
+      document.getElementById('kvBetragAnzeige').textContent = fmtEUR(kvTotal);
+      const resultEl = document.getElementById('kvResult');
+      resultEl.classList.add('show');
+      resultEl.innerHTML =
+        'Material: ' + fmtEUR(materialCost) + ' &nbsp;+&nbsp; Arbeitszeit: ' + totalStd.toFixed(2) + ' Std. × 120 €/Std. = ' + fmtEUR(laborCost) +
+        '<div class="total">Kostenvoranschlag gesamt: ' + fmtEUR(kvTotal) + '</div>';
+
+      updateFlow();
+      updateProgress();
+      scheduleSave();
+    });
+  });
+
+  function updateBranches(){
+    document.getElementById('branch-vorabinfo-ja').classList.toggle('show', state.vorabinfo==='ja');
+    document.getElementById('branch-kv-ja').classList.toggle('show', state.kvDecision==='ja');
+    document.getElementById('branch-kv-nein').classList.toggle('show', state.kvDecision==='nein');
+    document.getElementById('branch-testok-ja').classList.toggle('show', state.testok==='ja');
+    document.getElementById('branch-testok-nein').classList.toggle('show', state.testok==='nein');
+  }
+
+  function currentStatus(){
+    let status = 'Neuer Auftrag';
+    if(document.getElementById('c4d').checked) status = 'Versendet / Abgeschlossen';
+    else if(state.testok === 'ja') status = 'Bereit zur Endkontrolle';
+    else if(state.testok === 'nein') status = 'Erneute Instandsetzung nötig';
+    else {
+      const phaseBOpen = state.kvDecision === 'nein' || (state.kvDecision === 'ja' && state.freigabeErhalten);
+      if(phaseBOpen && state.kvDecision) status = 'In endgültiger Instandsetzung';
+      else if(state.kvDecision === 'ja') status = 'Wartet auf Kundenfreigabe (KV)';
+      else if(state.kvDecision === 'nein') status = 'In Diagnose (E-Werkstatt)';
+      else if(document.getElementById('c2d').checked || document.getElementById('c2a').checked) status = 'In Werkstattprüfung';
+      else if(document.getElementById('c1d').checked) status = 'In Werkstattprüfung';
+    }
+    return status;
+  }
+
+  function updateFlow(){
+    const card3 = document.getElementById('card3');
+    const card4 = document.getElementById('card4');
+    const phaseB = document.getElementById('phaseB');
+    const bannerWait = document.getElementById('banner-wait-kv');
+    const bannerShipped = document.getElementById('banner-shipped');
+
+    card3.classList.toggle('disabled', !state.kvDecision);
+
+    const phaseBOpen = state.kvDecision === 'nein' || (state.kvDecision === 'ja' && state.freigabeErhalten);
+    phaseB.classList.toggle('disabled', !phaseBOpen);
+    bannerWait.classList.toggle('show', state.kvDecision === 'ja' && !state.freigabeErhalten);
+
+    card4.classList.toggle('disabled', state.testok !== 'ja');
+
+    if(state.testok === 'nein'){
+      document.getElementById('ewLoopBadge').textContent = ewLoops > 0 ? '↩ erneuter Durchlauf (' + ewLoops + '. Instandsetzung)' : '';
+    } else if(state.testok === 'ja'){
+      document.getElementById('ewLoopBadge').textContent = '';
+    }
+
+    bannerShipped.classList.toggle('show', document.getElementById('c4d').checked);
+    document.getElementById('statusBadge').textContent = currentStatus();
+  }
+
+  function computeTotalMinutes(){
+    let totalMin = 0;
+    document.querySelectorAll('.staff-time').forEach(inp=>{ totalMin += Number(inp.value) || 0; });
+    return totalMin;
+  }
+
+  function updateProgress(){
+    const boxes = document.querySelectorAll('.card input[type=checkbox]');
+    const total = boxes.length + 2;
+    let done = 0;
+    boxes.forEach(b=>{ if(b.checked) done++; });
+    if(state.vorabinfo) done++;
+    if(state.testok) done++;
+    const pct = Math.round((done/total)*100);
+    document.getElementById('progressFill').style.width = pct + '%';
+    document.getElementById('progressPct').textContent = pct + '%';
+
+    const totalMin = computeTotalMinutes();
+    document.getElementById('timeTotal').textContent = 'Σ Arbeitszeit: ' + totalMin + ' Min. (' + (totalMin/60).toFixed(2) + ' Std.)';
+  }
+
+  section('Checkboxen/Arbeitszeit-Felder', ()=>{
+    document.querySelectorAll('.card input[type=checkbox]').forEach(cb=>{
+      cb.addEventListener('change', ()=>{
+        if(cb.id === 'c2d' && state.testok === null){ /* no-op, kept for status recompute */ }
+        updateFlow(); updateProgress(); scheduleSave();
+      });
+    });
+    document.querySelectorAll('.staff-time, .staff-select, #m_kunde, #m_geraet, #m_serien, #m_wawi, #m_datum').forEach(inp=>{
+      inp.addEventListener('input', ()=>{ updateProgress(); scheduleSave(); });
+      inp.addEventListener('change', scheduleSave);
+    });
+  });
+
+  section('Drucken-Button', ()=>{
+    document.getElementById('printBtn').addEventListener('click', async ()=>{
+      const serien = document.getElementById('m_serien').value.trim();
+      const meldung = serien
+        ? 'Der Auftrag wird als abgeschlossen markiert, die Checkliste wird unter der Seriennummer "' + serien + '" im Archiv gespeichert und anschließend gedruckt. Fortfahren?'
+        : 'Es ist noch keine Seriennummer erfasst – die Checkliste kann später nicht über die Seriennummer wiedergefunden werden. Trotzdem als abgeschlossen markieren und drucken?';
+      const ok = await showConfirm(meldung);
+      if(!ok) return;
+
+      document.getElementById('c4d').checked = true;
+      updateFlow();
+      updateProgress();
+      await saveNow();
+
+      try {
+        await apiPost('/api/archiv', {
+          auftragId,
+          serien,
+          kunde: document.getElementById('m_kunde').value,
+          geraet: document.getElementById('m_geraet').value,
+          wawi: document.getElementById('m_wawi').value,
+          status: currentStatus(),
+          daten: collectDaten()
+        });
+      } catch(err){
+        jsErrors.push('Checkliste im Archiv speichern: ' + (err && err.message ? err.message : err));
+        showJsErrors();
+      }
+
+      window.print();
+    });
+  });
+
+  section('Zurücksetzen-Button', ()=>{
+    document.getElementById('resetBtn').addEventListener('click', async ()=>{
+      const ok = await showConfirm('Alle Eingaben DIESES Auftrags zurücksetzen? (Mitarbeiterliste, Lagerbestand sowie gemerkte Fehlerbeschreibungen/Komponenten/Arbeitszeiten sind zentral und bleiben erhalten)');
+      if(!ok) return;
+      document.querySelectorAll('input[type=text]:not(#m_kunde):not(#m_geraet):not(#m_serien):not(#m_wawi), textarea, input[type=number]').forEach(el=>el.value='');
+      document.getElementById('m_kunde').value=''; document.getElementById('m_geraet').value=''; document.getElementById('m_serien').value=''; document.getElementById('m_wawi').value='';
+      document.querySelectorAll('input[type=checkbox]').forEach(el=>el.checked=false);
+      document.querySelectorAll('.toggle-group button, .seg button').forEach(b=>b.classList.remove('active-ja','active-nein','active-ok','active-bad'));
+      document.querySelectorAll('.staff-select').forEach(s=>s.value='');
+      state.vorabinfo=null; state.kvDecision=null; state.freigabeErhalten=false; state.testok=null; state.kvBetrag=0;
+      testSeg = { schall:null, reset:null };
+      ewLoops=0;
+      ersatzteile = [];
+      renderParts();
+      fotos = [];
+      renderFotos();
+      document.getElementById('kvResult').classList.remove('show');
+      document.getElementById('kvBetragAnzeige').textContent = '– noch nicht erstellt –';
+      document.getElementById('ewLoopBadge').textContent='';
+      document.getElementById('kvHint').style.display = 'none';
+      if(partInfoBox) partInfoBox.style.display = 'none';
+      document.getElementById('m_datum').value = '';
+      setAktuellesDatumWennLeer();
+      updateBranches(); updateFlow(); updateProgress();
+      scheduleSave(true);
+    });
+  });
+
+  // ---- Speichern / Laden dieses Auftrags ----
+  function collectDaten(){
+    const checks = {};
+    document.querySelectorAll('.card input[type=checkbox]').forEach(cb=>{ checks[cb.id] = cb.checked; });
+    const staff = {};
+    document.querySelectorAll('.staff-select').forEach(sel=>{
+      staff['step'+sel.dataset.step] = staff['step'+sel.dataset.step] || {};
+      staff['step'+sel.dataset.step].mitarbeiter = sel.value;
+    });
+    document.querySelectorAll('.staff-time').forEach(inp=>{
+      staff['step'+inp.dataset.step] = staff['step'+inp.dataset.step] || {};
+      staff['step'+inp.dataset.step].minuten = inp.value;
+    });
+    const texts = {};
+    ['ta_fehler_kunde','ta_komponenten_eingang','ta_fehler_techniker','ta_austausch_komponenten','fehlerbildRueck'].forEach(id=>{
+      const el = document.getElementById(id);
+      if(el) texts[id] = el.value;
+    });
+    return {
+      meta: { datum: document.getElementById('m_datum').value },
+      checks, texts, state, ewLoops, staff, ersatzteile, testSeg, fotos,
+      kvResultHtml: document.getElementById('kvResult').classList.contains('show') ? document.getElementById('kvResult').innerHTML : ''
+    };
+  }
+
+  async function saveNow(){
+    if(!loaded) return;
+    const daten = collectDaten();
+    const badge = document.getElementById('saveBadge');
+    badge.textContent = 'speichert…';
+    await apiPut('/api/auftraege/' + auftragId, {
+      kunde: document.getElementById('m_kunde').value,
+      geraet: document.getElementById('m_geraet').value,
+      serien: document.getElementById('m_serien').value,
+      wawi: document.getElementById('m_wawi').value,
+      status: currentStatus(),
+      daten
+    });
+    badge.textContent = 'gespeichert ✓';
+  }
+
+  function scheduleSave(immediate){
+    clearTimeout(saveTimer);
+    if(immediate){ saveNow(); return; }
+    document.getElementById('saveBadge').textContent = 'ungespeicherte Änderung…';
+    saveTimer = setTimeout(saveNow, 900);
+  }
+
+  function applyDaten(d){
+    if(!d) return;
+    if(d.meta && d.meta.datum) document.getElementById('m_datum').value = d.meta.datum;
+    if(d.checks){
+      Object.keys(d.checks).forEach(id=>{
+        const el = document.getElementById(id);
+        if(el) el.checked = !!d.checks[id];
+      });
+    }
+    if(d.texts){
+      Object.keys(d.texts).forEach(id=>{
+        const el = document.getElementById(id);
+        if(el){ el.value = d.texts[id]; if(el._refreshMem) el._refreshMem(); }
+      });
+    }
+    if(d.state) Object.assign(state, d.state);
+    if(typeof d.ewLoops === 'number') ewLoops = d.ewLoops;
+    if(d.ersatzteile) ersatzteile = d.ersatzteile;
+    if(d.testSeg) testSeg = d.testSeg;
+    if(Array.isArray(d.fotos)) fotos = d.fotos;
+    if(d.staff){
+      Object.keys(d.staff).forEach(stepKey=>{
+        const step = stepKey.replace('step','');
+        const sel = document.querySelector(`.staff-select[data-step="${step}"]`);
+        const timeInp = document.querySelector(`.staff-time[data-step="${step}"]`);
+        if(sel && d.staff[stepKey].mitarbeiter) sel.value = d.staff[stepKey].mitarbeiter;
+        if(timeInp && d.staff[stepKey].minuten) timeInp.value = d.staff[stepKey].minuten;
+      });
+    }
+    // Toggle-Buttons visuell wiederherstellen
+    ['vorabinfo','kvDecision','testok'].forEach(group=>{
+      if(state[group]){
+        const btn = document.querySelector(`.toggle-group[data-group="${group}"] button[data-val="${state[group]}"]`);
+        setToggle(group, state[group], btn);
+      }
+    });
+    document.getElementById('freigabeErhalten').checked = !!state.freigabeErhalten;
+    ['schall','reset'].forEach(grp=>{
+      if(testSeg[grp]){
+        const seg = document.querySelector(`.seg[data-testgroup="${grp}"]`);
+        const btn = seg.querySelector(`button[data-val="${testSeg[grp]}"]`);
+        seg.querySelectorAll('button').forEach(b=>b.classList.remove('active-ok','active-bad'));
+        if(btn) btn.classList.add(testSeg[grp] === 'ok' ? 'active-ok' : 'active-bad');
+      }
+    });
+    if(state.kvBetrag){
+      document.getElementById('kvBetragAnzeige').textContent = fmtEUR(state.kvBetrag);
+    }
+    if(d.kvResultHtml){
+      const resultEl = document.getElementById('kvResult');
+      resultEl.innerHTML = d.kvResultHtml;
+      resultEl.classList.add('show');
+    }
+    renderParts();
+    renderFotos();
+  }
+
+  // ---- Initialisierung ----
+  async function init(){
+    let auftrag = null;
+    try {
+      const [mitarbeiter, lager, memory, auftragData] = await Promise.all([
+        apiGet('/api/mitarbeiter'),
+        apiGet('/api/lager'),
+        apiGet('/api/memory'),
+        apiGet('/api/auftraege/' + auftragId)
+      ]);
+      mitarbeiterListe = mitarbeiter;
+      LAGER_DB = lager;
+      MEMORY = memory;
+      auftrag = auftragData;
+
+      document.getElementById('m_kunde').value = auftrag.kunde || '';
+      document.getElementById('m_geraet').value = auftrag.geraet || '';
+      document.getElementById('m_serien').value = auftrag.serien || '';
+      document.getElementById('m_wawi').value = auftrag.wawi || '';
+    } catch(e){
+      jsErrors.push('Daten vom Server laden: ' + (e && e.message ? e.message : e));
+      showJsErrors();
+    }
+
+    section('Ersatzteil-Auswahlliste', refreshDatalist);
+    section('Mitarbeiter-Liste anzeigen', renderRoster);
+    section('Gedächtnis-Funktionen initialisieren', initMemoryUI);
+    section('Arbeitszeit-Liste aktualisieren', refreshArbeitszeitListe);
+    if(auftrag) section('Gespeicherte Daten anwenden', ()=>applyDaten(auftrag.daten));
+    section('Datum/Uhrzeit einfügen', setAktuellesDatumWennLeer);
+    section('Anzeige aktualisieren', ()=>{ updateBranches(); updateFlow(); updateProgress(); });
+    loaded = true;
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
