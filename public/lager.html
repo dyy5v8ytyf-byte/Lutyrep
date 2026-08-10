@@ -8,16 +8,21 @@
   :root{--navy:#2E4057;--navy-dark:#1c2a3a;--light:#EEF2F7;--border:#D6DEE7;--green:#2f9e63;--red:#c94b4b;--text:#242c35;--muted:#6b7684;}
   *{box-sizing:border-box;}
   body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;background:#f4f6f9;color:var(--text);padding:24px 16px 60px;}
-  .wrap{max-width:900px;margin:0 auto;}
+  .wrap{max-width:960px;margin:0 auto;}
   header{background:linear-gradient(135deg,var(--navy),var(--navy-dark));color:#fff;border-radius:14px;padding:20px 26px;margin-bottom:18px;}
   header h1{margin:0 0 4px;font-size:1.3rem;}
   a.back{color:#cbd6e2;font-size:.82rem;text-decoration:none;}
+  .searchRow{display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap;}
+  .searchRow input{flex:1;min-width:200px;border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:.9rem;font-family:inherit;}
+  .searchInfo{font-size:.78rem;color:var(--muted);}
   table{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden;border:1px solid var(--border);}
   thead th{background:var(--light);text-align:left;padding:9px 12px;font-size:.72rem;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);}
   tbody td{padding:8px 12px;font-size:.87rem;border-bottom:1px solid #eef1f5;}
+  tbody td.nummerCell{font-size:.78rem;color:var(--muted);white-space:nowrap;}
   tbody input{width:90px;border:1px solid var(--border);border-radius:6px;padding:5px 7px;font-size:.85rem;font-family:inherit;}
   .savedTag{font-size:.72rem;color:var(--green);margin-left:6px;opacity:0;transition:opacity .3s;}
   .savedTag.show{opacity:1;}
+  .moreNote{padding:10px 12px;font-size:.8rem;color:var(--muted);text-align:center;}
   .addRow{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
   .addRow input{border:1px solid var(--border);border-radius:7px;padding:7px 9px;font-size:.87rem;font-family:inherit;}
   .addRow button{border:none;background:var(--navy);color:#fff;border-radius:7px;padding:7px 14px;font-size:.85rem;font-weight:600;cursor:pointer;}
@@ -30,9 +35,10 @@
   .importRow button.secondary, .importRow label.fileBtn{background:#fff;color:var(--navy);border:1px solid var(--navy);}
   .importRow input[type=file]{display:none;}
   .importFileName{font-size:.8rem;color:var(--muted);}
-  .importResult{margin-top:10px;font-size:.82rem;padding:8px 10px;border-radius:7px;display:none;}
+  .importResult{margin-top:10px;font-size:.82rem;padding:8px 10px;border-radius:7px;display:none;white-space:pre-wrap;}
   .importResult.ok{display:block;background:#eef7f0;color:#1f7a48;border:1px solid #bfe3c8;}
   .importResult.err{display:block;background:#fbeaea;color:#a33131;border:1px solid #f0c3c3;}
+  .importResult.busy{display:block;background:var(--light);color:var(--navy);border:1px solid var(--border);}
 
   @media (max-width: 480px){
     body{padding:14px 10px 40px;}
@@ -55,28 +61,35 @@
     <a class="back" href="index.html">← zur Übersicht</a>
     <h1>📦 Lagerbestand (zentral, für alle Nutzer)</h1>
   </header>
+
+  <div class="searchRow">
+    <input type="text" id="searchInp" placeholder="Suche nach Bezeichnung oder Artikelnummer...">
+    <span class="searchInfo" id="searchInfo"></span>
+  </div>
+
   <table>
-    <thead><tr><th>Bezeichnung</th><th>Ist-Bestand</th><th>EK-Preis (€)</th><th>VK-Preis (€)</th><th></th></tr></thead>
+    <thead><tr><th>Artikelnr.</th><th>Bezeichnung</th><th>Ist-Bestand</th><th>EK-Preis (€)</th><th>VK-Preis (€)</th><th></th></tr></thead>
     <tbody id="tbody"></tbody>
   </table>
   <div class="addRow">
     <input type="text" id="newName" placeholder="Neues Ersatzteil...">
+    <input type="text" id="newNummer" placeholder="Artikelnr. (optional)">
     <input type="number" id="newBestand" placeholder="Bestand" value="0">
     <input type="number" id="newEkPreis" placeholder="EK-Preis €" step="0.01">
     <input type="number" id="newVkPreis" placeholder="VK-Preis €" step="0.01">
     <button id="addBtn">+ Hinzufügen</button>
   </div>
-  <p style="font-size:.8rem;color:var(--muted);margin-top:10px;">EK-Preis = Einkaufspreis (was Wwtec zahlt). VK-Preis = Verkaufspreis, der dem Kunden im Kostenvoranschlag berechnet wird.</p>
+  <p style="font-size:.8rem;color:var(--muted);margin-top:10px;">EK-Preis = Einkaufspreis (was Wwtec zahlt). VK-Preis = Verkaufspreis, der dem Kunden im Kostenvoranschlag berechnet wird. Die Artikelnummer identifiziert einen Artikel eindeutig, auch wenn mehrere Artikel die gleiche Bezeichnung haben.</p>
 
   <div class="importBox">
     <h2>📥 Artikel-/Preisimport per CSV</h2>
-    <p>Für Massenpflege in Excel: Liste als CSV exportieren, in Excel bearbeiten (Preise anpassen, neue Ersatzteile anhängen), als CSV speichern und wieder importieren.</p>
-    <p><b>Spalten:</b> Bezeichnung; Bestand; EK-Preis; VK-Preis (Semikolon- oder Komma-getrennt, deutsches Komma als Dezimaltrennzeichen wird erkannt).</p>
-    <p><b>Wichtig:</b> Bei bereits vorhandenen Ersatzteilen (gleiche Bezeichnung) werden beim Import <b>nur die Preise</b> übernommen – der aktuelle Lagerbestand bleibt unangetastet und wird nicht überschrieben. Neue Ersatzteile werden mit dem angegebenen Bestand neu angelegt.</p>
+    <p>Für Massenpflege in Excel: Liste als CSV exportieren, in Excel bearbeiten (Preise anpassen, neue Ersatzteile anhängen), als CSV speichern und wieder importieren. Auch ein Export direkt aus einem ERP-System (z. B. mit den Spalten Nummer/Kurzbezeichnung) wird erkannt.</p>
+    <p><b>Erkannte Spalten (Groß-/Kleinschreibung egal):</b> Artikelnummer/Nummer, Bezeichnung/Kurzbezeichnung, Bestand, EK-Preis, VK-Preis. Semikolon-, Komma- oder Tab-getrennt; deutsches Komma als Dezimaltrennzeichen wird erkannt.</p>
+    <p><b>Wichtig:</b> Hat eine Zeile eine Artikelnummer, ist diese das eindeutige Kennzeichen – bei einem bereits vorhandenen Artikel (gleiche Artikelnummer) werden beim Import <b>nur die Preise</b> übernommen, der Lagerbestand bleibt unangetastet. Ohne Artikelnummer wird stattdessen (nur unter bereits namensgleichen Artikeln ohne eigene Artikelnummer) nach der Bezeichnung gematcht. Neue Artikel werden mit dem angegebenen Bestand (falls vorhanden, sonst 0) neu angelegt.</p>
     <div class="importRow">
       <button id="exportCsvBtn" type="button" class="secondary">⬇️ Aktuelle Liste als CSV exportieren</button>
       <label class="fileBtn" for="importFile">📄 CSV-Datei wählen</label>
-      <input type="file" id="importFile" accept=".csv,text/csv">
+      <input type="file" id="importFile" accept=".csv,text/csv,text/tab-separated-values">
       <span class="importFileName" id="importFileName">keine Datei gewählt</span>
       <button id="importCsvBtn" type="button">⬆️ Importieren</button>
     </div>
@@ -84,41 +97,77 @@
   </div>
 </div>
 <script>
+let alleArtikel = {}; // id -> {id, nummer, name, bestand, ekPreis, vkPreis}
+const MAX_ROWS_ANZEIGEN = 300; // Performance-Grenze: bei sehr großen Katalogen (mehrere Tausend Artikel) nicht alles auf einmal ins DOM rendern
+
 async function load(){
   const res = await fetch('/api/lager');
-  const data = await res.json();
+  alleArtikel = await res.json();
+  render();
+}
+
+function render(){
+  const query = document.getElementById('searchInp').value.trim().toLowerCase();
+  let liste = Object.values(alleArtikel);
+  const gesamt = liste.length;
+  if(query){
+    liste = liste.filter(v =>
+      (v.name || '').toLowerCase().includes(query) ||
+      (v.nummer || '').toLowerCase().includes(query)
+    );
+  }
+  liste.sort((a,b) => (a.name||'').localeCompare(b.name||'', 'de', {sensitivity:'base'}));
+
+  const info = document.getElementById('searchInfo');
+  const anzahlTreffer = liste.length;
+  const angezeigt = Math.min(anzahlTreffer, MAX_ROWS_ANZEIGEN);
+  if(query){
+    info.textContent = anzahlTreffer + ' Treffer' + (anzahlTreffer > angezeigt ? ' (zeige ' + angezeigt + ' – bitte genauer eingeben für weniger Treffer)' : '');
+  } else {
+    info.textContent = gesamt + ' Artikel insgesamt' + (gesamt > angezeigt ? ' (zeige die ersten ' + angezeigt + ' – Suche nutzen, um andere zu finden)' : '');
+  }
+
+  const sichtbar = liste.slice(0, MAX_ROWS_ANZEIGEN);
   const tbody = document.getElementById('tbody');
-  tbody.innerHTML = Object.entries(data).sort((a,b)=>a[0].localeCompare(b[0],'de')).map(([name,v])=>`
+  tbody.innerHTML = sichtbar.map(v => `
     <tr>
-      <td>${esc(name)}</td>
-      <td><input type="number" min="0" data-name="${esc(name)}" data-field="bestand" value="${v.bestand}"></td>
-      <td><input type="number" min="0" step="0.01" data-name="${esc(name)}" data-field="ekPreis" value="${v.ekPreis ?? ''}"></td>
-      <td><input type="number" min="0" step="0.01" data-name="${esc(name)}" data-field="vkPreis" value="${v.vkPreis ?? ''}"></td>
-      <td><span class="savedTag" id="tag-${cssId(name)}">gespeichert ✓</span></td>
+      <td class="nummerCell">${esc(v.nummer || '–')}</td>
+      <td>${esc(v.name)}</td>
+      <td><input type="number" min="0" data-id="${esc(v.id)}" data-field="bestand" value="${v.bestand}"></td>
+      <td><input type="number" min="0" step="0.01" data-id="${esc(v.id)}" data-field="ekPreis" value="${v.ekPreis ?? ''}"></td>
+      <td><input type="number" min="0" step="0.01" data-id="${esc(v.id)}" data-field="vkPreis" value="${v.vkPreis ?? ''}"></td>
+      <td><span class="savedTag" id="tag-${cssId(v.id)}">gespeichert ✓</span></td>
     </tr>
   `).join('');
+  if(!sichtbar.length){
+    tbody.innerHTML = '<tr><td colspan="6" class="moreNote">Keine Artikel gefunden.</td></tr>';
+  }
   tbody.querySelectorAll('input').forEach(inp=>{
     inp.addEventListener('change', async ()=>{
-      const name = inp.dataset.name, field = inp.dataset.field;
+      const id = inp.dataset.id, field = inp.dataset.field;
       const body = {};
       body[field] = inp.value === '' ? null : Number(inp.value);
-      await fetch('/api/lager/' + encodeURIComponent(name), { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
-      const tag = document.getElementById('tag-' + cssId(name));
-      tag.classList.add('show');
-      setTimeout(()=>tag.classList.remove('show'), 1500);
+      await fetch('/api/lager/' + encodeURIComponent(id), { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+      if(alleArtikel[id]) alleArtikel[id][field] = body[field];
+      const tag = document.getElementById('tag-' + cssId(id));
+      if(tag){ tag.classList.add('show'); setTimeout(()=>tag.classList.remove('show'), 1500); }
     });
   });
 }
+document.getElementById('searchInp').addEventListener('input', render);
+
 function esc(s){ return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
-function cssId(name){ return name.replace(/[^a-zA-Z0-9]/g,'_'); }
+function cssId(id){ return String(id).replace(/[^a-zA-Z0-9]/g,'_'); }
+
 document.getElementById('addBtn').addEventListener('click', async ()=>{
   const name = document.getElementById('newName').value.trim();
-  if(!name) return;
+  const nummer = document.getElementById('newNummer').value.trim();
+  if(!name && !nummer) return;
   const bestand = Number(document.getElementById('newBestand').value) || 0;
   const ekPreis = document.getElementById('newEkPreis').value === '' ? null : Number(document.getElementById('newEkPreis').value);
   const vkPreis = document.getElementById('newVkPreis').value === '' ? null : Number(document.getElementById('newVkPreis').value);
-  await fetch('/api/lager/' + encodeURIComponent(name), { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({bestand, ekPreis, vkPreis}) });
-  document.getElementById('newName').value=''; document.getElementById('newBestand').value=0; document.getElementById('newEkPreis').value=''; document.getElementById('newVkPreis').value='';
+  await fetch('/api/lager', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name, nummer, bestand, ekPreis, vkPreis}) });
+  document.getElementById('newName').value=''; document.getElementById('newNummer').value=''; document.getElementById('newBestand').value=0; document.getElementById('newEkPreis').value=''; document.getElementById('newVkPreis').value='';
   load();
 });
 
@@ -126,12 +175,12 @@ document.getElementById('addBtn').addEventListener('click', async ()=>{
 document.getElementById('exportCsvBtn').addEventListener('click', async ()=>{
   const res = await fetch('/api/lager');
   const data = await res.json();
-  const zeilen = ['Bezeichnung;Bestand;EK-Preis;VK-Preis'];
-  Object.entries(data).sort((a,b)=>a[0].localeCompare(b[0],'de')).forEach(([name, v])=>{
+  const zeilen = ['Artikelnummer;Bezeichnung;Bestand;EK-Preis;VK-Preis'];
+  Object.values(data).sort((a,b)=>(a.name||'').localeCompare(b.name||'','de')).forEach(v=>{
     const csvEsc = s => '"' + String(s).replace(/"/g,'""') + '"';
     const ek = v.ekPreis != null ? String(v.ekPreis).replace('.', ',') : '';
     const vk = v.vkPreis != null ? String(v.vkPreis).replace('.', ',') : '';
-    zeilen.push([csvEsc(name), v.bestand, ek, vk].join(';'));
+    zeilen.push([csvEsc(v.nummer || ''), csvEsc(v.name), v.bestand, ek, vk].join(';'));
   });
   // BOM (﻿) voranstellen, damit Excel Umlaute korrekt anzeigt
   const blob = new Blob(['﻿' + zeilen.join('\r\n')], {type:'text/csv;charset=utf-8;'});
@@ -169,7 +218,8 @@ function splitCsvLine(line, delim){
   return out.map(s => s.trim());
 }
 function detectDelimiter(headerLine){
-  return (headerLine.split(';').length >= headerLine.split(',').length) ? ';' : ',';
+  const counts = { ';': (headerLine.split(';').length - 1), ',': (headerLine.split(',').length - 1), '\t': (headerLine.split('\t').length - 1) };
+  return Object.entries(counts).sort((a,b) => b[1] - a[1])[0][0];
 }
 function parseZahl(s){
   if(s === undefined || s === null) return null;
@@ -187,59 +237,80 @@ function parseZahl(s){
 function normHeader(h){
   return String(h||'').toLowerCase().trim().replace(/[^a-z0-9äöüß]/g,'');
 }
-function showImportResult(text, isError){
+function showImportResult(text, cls){
   const el = document.getElementById('importResult');
   el.textContent = text;
-  el.className = 'importResult ' + (isError ? 'err' : 'ok');
+  el.className = 'importResult ' + cls;
+}
+
+// Liest die Datei als Text ein - versucht zuerst UTF-8, erkennt aber auch ältere
+// ISO-8859-1/Windows-1252-Exporte (z. B. aus manchen ERP-Systemen), bei denen Umlaute
+// sonst als "�" erscheinen würden, und dekodiert dann automatisch passend nach.
+async function leseDateiAlsText(file){
+  const buf = await file.arrayBuffer();
+  const bytes = new Uint8Array(buf);
+  try {
+    const utf8 = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+    return utf8;
+  } catch(e) {
+    return new TextDecoder('windows-1252').decode(bytes);
+  }
 }
 
 document.getElementById('importCsvBtn').addEventListener('click', async ()=>{
-  if(!importFileHandle){ showImportResult('Bitte zuerst eine CSV-Datei auswählen.', true); return; }
+  if(!importFileHandle){ showImportResult('Bitte zuerst eine CSV-Datei auswählen.', 'err'); return; }
+  showImportResult('Datei wird gelesen und verarbeitet...', 'busy');
+  await new Promise(r => setTimeout(r, 20)); // UI kurz aktualisieren lassen, bevor es (bei großen Dateien) rechenintensiv wird
+
   let text;
-  try { text = await importFileHandle.text(); }
-  catch(e){ showImportResult('Datei konnte nicht gelesen werden: ' + e.message, true); return; }
+  try { text = await leseDateiAlsText(importFileHandle); }
+  catch(e){ showImportResult('Datei konnte nicht gelesen werden: ' + e.message, 'err'); return; }
 
   const lines = text.split(/\r?\n/).filter(l => l.trim() !== '');
-  if(!lines.length){ showImportResult('Datei ist leer.', true); return; }
+  if(!lines.length){ showImportResult('Datei ist leer.', 'err'); return; }
 
   const delim = detectDelimiter(lines[0]);
   const header = splitCsvLine(lines[0], delim).map(normHeader);
   const idx = {
-    name: header.findIndex(h => ['bezeichnung','name','artikel','ersatzteil'].includes(h)),
+    nummer: header.findIndex(h => ['nummer','artikelnummer','artnr','artikelnr'].includes(h)),
+    name: header.findIndex(h => ['bezeichnung','name','artikel','ersatzteil','kurzbezeichnung'].includes(h)),
     bestand: header.findIndex(h => ['bestand','menge','anzahl','stück','stk','stueck','iststand'].includes(h)),
     ekPreis: header.findIndex(h => ['ekpreis','ek','einkaufspreis'].includes(h)),
-    vkPreis: header.findIndex(h => ['vkpreis','vk','verkaufspreis'].includes(h))
+    vkPreis: header.findIndex(h => ['vkpreis','vk','verkaufspreis','preis','0'].includes(h))
   };
-  if(idx.name === -1){
-    showImportResult('Spalte "Bezeichnung" wurde in der Kopfzeile nicht gefunden. Bitte die Export-Vorlage als Muster verwenden.', true);
+  if(idx.name === -1 && idx.nummer === -1){
+    showImportResult('Weder Spalte "Bezeichnung" noch "Artikelnummer" in der Kopfzeile gefunden. Bitte die Export-Vorlage als Muster verwenden.', 'err');
     return;
   }
 
   const rows = [];
   for(let i=1; i<lines.length; i++){
     const cells = splitCsvLine(lines[i], delim);
-    const name = (cells[idx.name] || '').trim();
-    if(!name) continue;
+    const name = idx.name !== -1 ? (cells[idx.name] || '').trim() : '';
+    const nummer = idx.nummer !== -1 ? (cells[idx.nummer] || '').trim() : '';
+    if(!name && !nummer) continue;
     rows.push({
       name,
+      nummer,
       bestand: idx.bestand !== -1 ? parseZahl(cells[idx.bestand]) : null,
       ekPreis: idx.ekPreis !== -1 ? parseZahl(cells[idx.ekPreis]) : null,
       vkPreis: idx.vkPreis !== -1 ? parseZahl(cells[idx.vkPreis]) : null
     });
   }
-  if(!rows.length){ showImportResult('Keine gültigen Zeilen in der Datei gefunden.', true); return; }
+  if(!rows.length){ showImportResult('Keine gültigen Zeilen in der Datei gefunden.', 'err'); return; }
 
+  showImportResult('Übertrage ' + rows.length + ' Zeilen an den Server...', 'busy');
   try {
     const res = await fetch('/api/lager/import', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({rows}) });
     const result = await res.json();
     const teile = [];
     teile.push(result.neu.length + ' neu angelegt');
     teile.push(result.aktualisiert.length + ' aktualisiert (nur Preise)');
-    if(result.fehler.length) teile.push(result.fehler.length + ' Fehler: ' + result.fehler.join('; '));
-    showImportResult(teile.join(', ') + '.', result.fehler.length > 0 && !result.neu.length && !result.aktualisiert.length);
+    if(result.fehler.length) teile.push(result.fehler.length + ' Fehler' + (result.fehler.length <= 10 ? ': ' + result.fehler.join('; ') : ' (erste 10: ' + result.fehler.slice(0,10).join('; ') + ')'));
+    showImportResult(teile.join(', ') + '.', (result.fehler.length > 0 && !result.neu.length && !result.aktualisiert.length) ? 'err' : 'ok');
     load();
   } catch(e){
-    showImportResult('Import fehlgeschlagen: ' + e.message, true);
+    showImportResult('Import fehlgeschlagen: ' + e.message, 'err');
   }
 });
 

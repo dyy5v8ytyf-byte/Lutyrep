@@ -629,21 +629,34 @@
   // <datalist> öffnet auf vielen Browsern (v.a. mobil/Safari) nicht zuverlässig von
   // selbst und zeigt nicht immer die volle Liste - deshalb hier eine eigene, klickbare
   // Liste, die beim Antippen/Fokussieren des Feldes garantiert aufklappt.
-  function filteredPartNames(q){
+  // Sucht nach Bezeichnung ODER Artikelnummer. Bei großen Katalogen (nach einem
+  // ERP-Import können das mehrere Tausend Artikel sein) wird die Trefferliste auf
+  // MAX_DROPDOWN_TREFFER begrenzt, damit die Seite nicht langsam wird.
+  const MAX_DROPDOWN_TREFFER = 30;
+  function filteredParts(q){
     const query = (q || '').trim().toLowerCase();
-    return Object.keys(LAGER_DB)
-      .filter(name => !query || name.toLowerCase().includes(query))
-      .sort((a, b) => a.localeCompare(b, 'de', { sensitivity: 'base' }));
+    const alle = Object.values(LAGER_DB);
+    if(!query) return alle.length <= 50 ? alle.slice().sort((a,b)=>a.name.localeCompare(b.name,'de',{sensitivity:'base'})) : [];
+    return alle
+      .filter(v => (v.name||'').toLowerCase().includes(query) || (v.nummer||'').toLowerCase().includes(query))
+      .sort((a, b) => a.name.localeCompare(b.name, 'de', { sensitivity: 'base' }));
   }
   function renderPartDropdown(){
     const dd = document.getElementById('partDropdown');
     if(!dd || !partNameInp) return;
-    const names = filteredPartNames(partNameInp.value);
-    if(!names.length){
-      dd.innerHTML = '<div class="opt-empty">Kein passendes Teil im Lager – wird beim Hinzufügen als neues Teil angelegt.</div>';
-    } else {
-      dd.innerHTML = names.map(n => `<div class="opt" data-name="${esc(n)}">${esc(n)}</div>`).join('');
+    const query = partNameInp.value.trim();
+    const treffer = filteredParts(query);
+    if(!query && Object.keys(LAGER_DB).length > 50){
+      dd.innerHTML = '<div class="opt-empty">' + Object.keys(LAGER_DB).length + ' Artikel im Lager – bitte tippen, um zu suchen.</div>';
+      return;
     }
+    if(!treffer.length){
+      dd.innerHTML = '<div class="opt-empty">Kein passendes Teil im Lager – wird beim Hinzufügen als neues Teil angelegt.</div>';
+      return;
+    }
+    const sichtbar = treffer.slice(0, MAX_DROPDOWN_TREFFER);
+    dd.innerHTML = sichtbar.map(v => `<div class="opt" data-id="${esc(v.id)}">${esc(v.name)}${v.nummer ? ' <span style="color:var(--muted);">[' + esc(v.nummer) + ']</span>' : ''}</div>`).join('')
+      + (treffer.length > sichtbar.length ? '<div class="opt-empty">+ ' + (treffer.length - sichtbar.length) + ' weitere Treffer – bitte genauer eingeben</div>' : '');
   }
   function showPartDropdown(){
     renderPartDropdown();
@@ -817,18 +830,31 @@
   });
 
   // ---- Ersatzteile / Lagerabgleich (zentral) ----
+  // Jeder Artikel hat eine eindeutige ID (Artikelnummer aus dem ERP-Import, oder "M<n>" für
+  // manuell angelegte Teile ohne Artikelnummer) - Namen allein reichen nicht als Kennzeichen,
+  // da mehrere Artikel dieselbe Bezeichnung tragen können (z. B. baugleiche Teile
+  // verschiedener Hersteller). "selectedPart" merkt sich den zuletzt eindeutig ausgewählten
+  // Artikel (per Dropdown-Klick, oder wenn die Eingabe exakt genau einen Namen trifft).
   let partNameInp, partInfoBox, partBestandText, partBestandAdjust, partPreisText;
+  let selectedPart = null;
+
+  function findePartNachName(name){
+    const treffer = Object.values(LAGER_DB).filter(v => v.name.toLowerCase() === name.toLowerCase());
+    return treffer.length === 1 ? treffer[0] : null;
+  }
 
   function refreshPartInfo(){
     const name = partNameInp.value.trim();
-    const entry = LAGER_DB[name];
-    if(entry){
+    if(!selectedPart || selectedPart.name.toLowerCase() !== name.toLowerCase()){
+      selectedPart = name ? findePartNachName(name) : null;
+    }
+    if(selectedPart){
       partInfoBox.style.display = 'flex';
-      partBestandText.textContent = entry.bestand;
-      partBestandAdjust.value = entry.bestand;
-      const ekTxt = entry.ekPreis != null ? fmtEUR(entry.ekPreis) : '–';
-      const vkTxt = entry.vkPreis != null ? fmtEUR(entry.vkPreis) : '–';
-      partPreisText.textContent = 'EK ' + ekTxt + ' / VK ' + vkTxt;
+      partBestandText.textContent = selectedPart.bestand;
+      partBestandAdjust.value = selectedPart.bestand;
+      const ekTxt = selectedPart.ekPreis != null ? fmtEUR(selectedPart.ekPreis) : '–';
+      const vkTxt = selectedPart.vkPreis != null ? fmtEUR(selectedPart.vkPreis) : '–';
+      partPreisText.textContent = 'EK ' + ekTxt + ' / VK ' + vkTxt + (selectedPart.nummer ? ' · Art-Nr. ' + selectedPart.nummer : '');
     } else {
       partInfoBox.style.display = name ? 'flex' : 'none';
       if(name){ partBestandText.textContent = 'neues Teil'; partBestandAdjust.value = 0; partPreisText.textContent = 'wird beim Hinzufügen erfragt'; }
@@ -848,9 +874,10 @@
     // Liste schon versteckt (und der Klick träfe ins Leere), bevor die Auswahl zählt.
     partDropdownEl.addEventListener('mousedown', (e)=>{
       const opt = e.target.closest('.opt');
-      if(!opt) return;
+      if(!opt || !opt.dataset.id) return;
       e.preventDefault();
-      partNameInp.value = opt.dataset.name;
+      selectedPart = LAGER_DB[opt.dataset.id] || null;
+      partNameInp.value = selectedPart ? selectedPart.name : '';
       refreshPartInfo();
       hidePartDropdown();
     });
@@ -858,10 +885,9 @@
       if(!e.target.closest('.part-name-wrap')) hidePartDropdown();
     });
     partBestandAdjust.addEventListener('change', async ()=>{
-      const name = partNameInp.value.trim();
-      if(LAGER_DB[name]){
-        LAGER_DB[name].bestand = Number(partBestandAdjust.value) || 0;
-        await apiPut('/api/lager/' + encodeURIComponent(name), { bestand: LAGER_DB[name].bestand });
+      if(selectedPart){
+        selectedPart.bestand = Number(partBestandAdjust.value) || 0;
+        await apiPut('/api/lager/' + encodeURIComponent(selectedPart.id), { bestand: selectedPart.bestand });
       }
     });
   });
@@ -869,7 +895,7 @@
   function renderParts(){
     const el = document.getElementById('partsList');
     el.innerHTML = ersatzteile.map((p, i)=>
-      `<div class="row"><span>${esc(p.name)} — Menge: ${p.qty} · VK: ${fmtEUR(p.vkPreis||0)} <span style="color:var(--muted);">(EK: ${fmtEUR(p.ekPreis||0)})</span></span><button data-i="${i}" type="button">entfernen</button></div>`
+      `<div class="row"><span>${esc(p.name)}${p.nummer ? ' <span style="color:var(--muted);">[' + esc(p.nummer) + ']</span>' : ''} — Menge: ${p.qty} · VK: ${fmtEUR(p.vkPreis||0)} <span style="color:var(--muted);">(EK: ${fmtEUR(p.ekPreis||0)})</span></span><button data-i="${i}" type="button">entfernen</button></div>`
     ).join('');
     el.querySelectorAll('button').forEach(b=>{
       b.addEventListener('click', ()=>{
@@ -897,28 +923,31 @@
       const qtyStr = await showPromptText('Menge (Stück) für "' + name + '"?', '1');
       const qty = Math.max(1, Number(qtyStr) || 1);
 
-      if(!LAGER_DB[name]){
+      let part = selectedPart && selectedPart.name === name ? selectedPart : findePartNachName(name);
+      if(!part){
         const bestandStr = await showPromptText('Neues Ersatzteil "' + name + '" – aktueller Lagerbestand (Stk)?', '0');
         const initBestand = Number(bestandStr) || 0;
         const initEkPreis = await parseEuroPrompt('EK-Preis (€, Einkauf) für "' + name + '"?', '');
         const initVkPreis = await parseEuroPrompt('VK-Preis (€, wird dem Kunden berechnet) für "' + name + '"?', '');
-        LAGER_DB[name] = { bestand: initBestand, ekPreis: initEkPreis, vkPreis: initVkPreis };
+        part = await apiPost('/api/lager', { name, bestand: initBestand, ekPreis: initEkPreis, vkPreis: initVkPreis });
+        LAGER_DB[part.id] = part;
         renderPartDropdown();
       } else {
-        if(LAGER_DB[name].ekPreis == null){
-          LAGER_DB[name].ekPreis = await parseEuroPrompt('EK-Preis (€, Einkauf) für "' + name + '"?', '');
+        if(part.ekPreis == null){
+          part.ekPreis = await parseEuroPrompt('EK-Preis (€, Einkauf) für "' + name + '"?', '');
         }
-        if(LAGER_DB[name].vkPreis == null){
-          LAGER_DB[name].vkPreis = await parseEuroPrompt('VK-Preis (€, wird dem Kunden berechnet) für "' + name + '"?', '');
+        if(part.vkPreis == null){
+          part.vkPreis = await parseEuroPrompt('VK-Preis (€, wird dem Kunden berechnet) für "' + name + '"?', '');
         }
       }
 
-      LAGER_DB[name].bestand = Math.max(0, LAGER_DB[name].bestand - qty);
-      ersatzteile.push({ name, qty, ekPreis: LAGER_DB[name].ekPreis, vkPreis: LAGER_DB[name].vkPreis });
+      part.bestand = Math.max(0, part.bestand - qty);
+      ersatzteile.push({ id: part.id, nummer: part.nummer, name: part.name, qty, ekPreis: part.ekPreis, vkPreis: part.vkPreis });
 
-      await apiPut('/api/lager/' + encodeURIComponent(name), { bestand: LAGER_DB[name].bestand, ekPreis: LAGER_DB[name].ekPreis, vkPreis: LAGER_DB[name].vkPreis });
+      await apiPut('/api/lager/' + encodeURIComponent(part.id), { bestand: part.bestand, ekPreis: part.ekPreis, vkPreis: part.vkPreis });
 
       partNameInp.value = '';
+      selectedPart = null;
       refreshPartInfo();
       renderParts();
       updateProgress();
@@ -986,16 +1015,18 @@
   }
 
   async function sicherstellenEkPreise(){
+    // p.id fehlt bei älteren, vor der Artikelnummer-Umstellung gespeicherten Aufträgen -
+    // dort wird der Preis nur in der Position selbst nachgetragen, ohne Lager-Abgleich.
     for(const p of ersatzteile){
       if(!p.ekPreis){
         p.ekPreis = await parseEuroPrompt('EK-Preis (€, Einkauf) für "' + p.name + '" fehlt noch – bitte eingeben:', '');
-        if(LAGER_DB[p.name]) LAGER_DB[p.name].ekPreis = p.ekPreis;
-        await apiPut('/api/lager/' + encodeURIComponent(p.name), { ekPreis: p.ekPreis });
+        if(p.id && LAGER_DB[p.id]) LAGER_DB[p.id].ekPreis = p.ekPreis;
+        if(p.id) await apiPut('/api/lager/' + encodeURIComponent(p.id), { ekPreis: p.ekPreis });
       }
       if(!p.vkPreis){
         p.vkPreis = await parseEuroPrompt('VK-Preis (€, wird dem Kunden berechnet) für "' + p.name + '" fehlt noch – bitte eingeben:', '');
-        if(LAGER_DB[p.name]) LAGER_DB[p.name].vkPreis = p.vkPreis;
-        await apiPut('/api/lager/' + encodeURIComponent(p.name), { vkPreis: p.vkPreis });
+        if(p.id && LAGER_DB[p.id]) LAGER_DB[p.id].vkPreis = p.vkPreis;
+        if(p.id) await apiPut('/api/lager/' + encodeURIComponent(p.id), { vkPreis: p.vkPreis });
       }
     }
   }

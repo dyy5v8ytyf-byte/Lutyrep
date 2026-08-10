@@ -23,33 +23,35 @@ const MEMORY_KATEGORIEN = ['fehler_kunde', 'fehler_techniker', 'fehlerbild_rueck
 // Seed: Lagerbestand aus Lagerabgleich_Ersatzteile.xlsx (nur beim allerersten Start)
 // ekPreis = Einkaufspreis (was Wwtec zahlt), vkPreis = Verkaufspreis (was dem Kunden
 // im Kostenvoranschlag berechnet wird) - beide getrennt erfassbar.
-const seedLager = {
-  "Netzkabel":            { bestand:24, ekPreis:null, vkPreis:null },
-  "HF-Kabel":             { bestand:15, ekPreis:null, vkPreis:null },
-  "Erdungskabel":         { bestand:9,  ekPreis:null, vkPreis:null },
-  "Steuerungskabel 1":    { bestand:6,  ekPreis:null, vkPreis:null },
-  "Steuerungskabel 2":    { bestand:3,  ekPreis:null, vkPreis:null },
-  "SP/USP 340":           { bestand:4,  ekPreis:null, vkPreis:null },
-  "SP640V2":              { bestand:2,  ekPreis:null, vkPreis:null },
-  "Al-Koffer":            { bestand:12, ekPreis:null, vkPreis:null },
-  "Schallkopf Typ A":     { bestand:3,  ekPreis:null, vkPreis:null },
-  "Schallkopf Typ B":     { bestand:1,  ekPreis:null, vkPreis:null },
-  "Schallkopf Typ C":     { bestand:5,  ekPreis:null, vkPreis:null },
-  "Sonotrode Standard":   { bestand:7,  ekPreis:null, vkPreis:null },
-  "Sonotrode Spezial":    { bestand:2,  ekPreis:null, vkPreis:null },
-  "Netzteil intern":      { bestand:5,  ekPreis:null, vkPreis:null },
-  "Steuerplatine":        { bestand:2,  ekPreis:null, vkPreis:null },
-  "Sicherung 2A":         { bestand:40, ekPreis:null, vkPreis:null },
-  "Gehäusedeckel":        { bestand:6,  ekPreis:null, vkPreis:null },
-  "Reset-Taster":         { bestand:8,  ekPreis:null, vkPreis:null }
-};
+// Diese 18 Teile haben keine echte Artikelnummer aus dem ERP - sie bekommen daher eine
+// "manuelle" ID (M1, M2, ...) statt einer Artikelnummer (siehe Schema-Erklärung unten).
+const seedLagerNamen = [
+  ["Netzkabel", 24], ["HF-Kabel", 15], ["Erdungskabel", 9],
+  ["Steuerungskabel 1", 6], ["Steuerungskabel 2", 3], ["SP/USP 340", 4],
+  ["SP640V2", 2], ["Al-Koffer", 12], ["Schallkopf Typ A", 3],
+  ["Schallkopf Typ B", 1], ["Schallkopf Typ C", 5], ["Sonotrode Standard", 7],
+  ["Sonotrode Spezial", 2], ["Netzteil intern", 5], ["Steuerplatine", 2],
+  ["Sicherung 2A", 40], ["Gehäusedeckel", 6], ["Reset-Taster", 8]
+];
 
+// ---- Lagerbestand-Schema (Version 2) ----
+// Jedes Ersatzteil hat eine eindeutige interne ID:
+// - Artikel aus einem ERP-/CSV-Import mit Artikelnummer: id = Artikelnummer (z. B. "01/0019")
+// - Manuell angelegte Artikel ohne Artikelnummer: id = "M" + laufende Nummer
+// Grund: Der reine Name (Bezeichnung/Kurzbezeichnung) ist NICHT eindeutig genug - im echten
+// Ersatzteilkatalog kommen viele Kurzbezeichnungen mehrfach vor (baugleiche Teile
+// unterschiedlicher Hersteller). Ein Import, der nur nach Namen matcht, würde solche
+// Artikel gegenseitig überschreiben. Die Artikelnummer ist dagegen (fast) immer eindeutig.
 function defaultData() {
   const lager = {};
-  Object.entries(seedLager).forEach(([name, v]) => { lager[name] = { bestand: v.bestand, ekPreis: v.ekPreis, vkPreis: v.vkPreis }; });
+  let nextManualLagerId = 1;
+  seedLagerNamen.forEach(([name, bestand]) => {
+    const id = 'M' + (nextManualLagerId++);
+    lager[id] = { id, nummer: null, name, bestand, ekPreis: null, vkPreis: null };
+  });
   const memory = {};
   MEMORY_KATEGORIEN.forEach(k => { memory[k] = []; });
-  return { mitarbeiter: [], lager, memory, auftraege: [], nextAuftragId: 1 };
+  return { mitarbeiter: [], lager, lagerSchemaVersion: 2, nextManualLagerId, memory, auftraege: [], nextAuftragId: 1 };
 }
 
 let data;
@@ -70,6 +72,30 @@ data.mitarbeiter = Array.isArray(data.mitarbeiter) ? data.mitarbeiter : [];
 data.lager = data.lager && typeof data.lager === 'object' ? data.lager : {};
 // Migration: ältere Datendateien kennen "vkPreis" noch nicht - Feld nachrüsten
 Object.values(data.lager).forEach(entry => { if (entry && !('vkPreis' in entry)) entry.vkPreis = null; });
+// Migration auf Schema Version 2: altes Lager war direkt nach Bezeichnung (Name) verschlüsselt
+// ({ "Netzkabel": {bestand,ekPreis,vkPreis} }). Da Namen nicht eindeutig genug sind (siehe
+// oben), wird jedem Eintrag jetzt eine stabile ID zugewiesen - alle vorhandenen Werte
+// (Bestand, Preise) bleiben dabei unverändert erhalten, es ändert sich nur der Schlüssel.
+let lagerMigriert = false;
+if (!data.lagerSchemaVersion || data.lagerSchemaVersion < 2) {
+  const altesLager = data.lager;
+  const neuesLager = {};
+  let nextManualLagerId = data.nextManualLagerId || 1;
+  Object.entries(altesLager).forEach(([key, v]) => {
+    if (v && typeof v === 'object' && v.id) {
+      // bereits im neuen Schema (z. B. schon migrierter Eintrag) - unverändert übernehmen
+      neuesLager[v.id] = v;
+    } else {
+      const id = 'M' + (nextManualLagerId++);
+      neuesLager[id] = { id, nummer: null, name: key, bestand: (v && v.bestand) || 0, ekPreis: (v && v.ekPreis) ?? null, vkPreis: (v && v.vkPreis) ?? null };
+    }
+  });
+  data.lager = neuesLager;
+  data.nextManualLagerId = nextManualLagerId;
+  data.lagerSchemaVersion = 2;
+  lagerMigriert = true;
+}
+data.nextManualLagerId = data.nextManualLagerId || 1;
 data.memory = data.memory && typeof data.memory === 'object' ? data.memory : {};
 MEMORY_KATEGORIEN.forEach(k => { if (!Array.isArray(data.memory[k])) data.memory[k] = []; });
 data.auftraege = Array.isArray(data.auftraege) ? data.auftraege : [];
@@ -82,8 +108,11 @@ function persist() {
   fs.writeFileSync(tmp, JSON.stringify(data, null, 2), 'utf8');
   fs.renameSync(tmp, DATA_FILE);
 }
-// beim allerersten Start (neue Datei) direkt sichern, damit die Seed-Werte auf Platte liegen
-if (!fs.existsSync(DATA_FILE)) persist();
+// beim allerersten Start (neue Datei) direkt sichern, damit die Seed-Werte auf Platte liegen -
+// ebenso sofort sichern, wenn oben eine Schema-Migration stattgefunden hat, damit die neue
+// Struktur auch wirklich auf der Platte ankommt und nicht bei jedem Neustart erneut nur im
+// Arbeitsspeicher migriert wird.
+if (!fs.existsSync(DATA_FILE) || lagerMigriert) persist();
 
 module.exports = {
   // ---- Mitarbeiter ----
@@ -99,53 +128,89 @@ module.exports = {
   },
 
   // ---- Lager ----
+  // Schema Version 2 (siehe oben): jeder Eintrag hat eine eindeutige ID (id), zusätzlich zum
+  // Namen (name) und einer optionalen Artikelnummer (nummer, aus ERP-Importen).
   getLager() {
     const out = {};
-    Object.keys(data.lager).sort((a, b) => a.localeCompare(b, 'de', { sensitivity: 'base' })).forEach(name => {
-      out[name] = { ...data.lager[name] };
+    Object.keys(data.lager).sort((a, b) => (data.lager[a].name || '').localeCompare(data.lager[b].name || '', 'de', { sensitivity: 'base' })).forEach(id => {
+      out[id] = { ...data.lager[id] };
     });
     return out;
   },
-  putLager(name, bestand, ekPreis, vkPreis) {
-    const current = data.lager[name] || { bestand: 0, ekPreis: null, vkPreis: null };
+  // Neuen Artikel manuell anlegen (z. B. über "+ Hinzufügen" in lager.html oder beim
+  // Hinzufügen eines noch unbekannten Ersatzteils in einem Auftrag). Ohne Artikelnummer
+  // bekommt der Eintrag eine automatisch vergebene "M<n>"-ID.
+  addLager(name, bestand, ekPreis, vkPreis, nummer) {
+    const trimmedNummer = (nummer ? String(nummer).trim() : '') || null;
+    const id = trimmedNummer || ('M' + (data.nextManualLagerId++));
+    data.lager[id] = {
+      id,
+      nummer: trimmedNummer,
+      name: (name || id).trim(),
+      bestand: (bestand === undefined || bestand === null || isNaN(Number(bestand))) ? 0 : Number(bestand),
+      ekPreis: (ekPreis === undefined || ekPreis === null || ekPreis === '') ? null : Number(ekPreis),
+      vkPreis: (vkPreis === undefined || vkPreis === null || vkPreis === '') ? null : Number(vkPreis)
+    };
+    persist();
+    return { ...data.lager[id] };
+  },
+  putLager(id, bestand, ekPreis, vkPreis) {
+    const current = data.lager[id];
+    if (!current) return null;
     const newBestand = (bestand === undefined || bestand === null) ? current.bestand : bestand;
     const newEkPreis = (ekPreis === undefined || ekPreis === null) ? current.ekPreis : ekPreis;
     const newVkPreis = (vkPreis === undefined || vkPreis === null) ? current.vkPreis : vkPreis;
-    data.lager[name] = { bestand: newBestand, ekPreis: newEkPreis, vkPreis: newVkPreis };
+    data.lager[id] = { ...current, bestand: newBestand, ekPreis: newEkPreis, vkPreis: newVkPreis };
     persist();
-    return { name, ...data.lager[name] };
+    return { ...data.lager[id] };
   },
   // Ersatzteil-/Preisimport aus CSV (siehe lager.html): bewusst NUR ergänzend/aktualisierend,
   // niemals überschreibend im Sinne von "alles löschen und neu anlegen" - damit ein Import
   // niemals versehentlich vorhandene Lagerdaten verliert.
-  // - Bereits vorhandenes Ersatzteil (Name-Treffer): NUR EK-/VK-Preis werden übernommen, der
-  //   live gepflegte Lagerbestand bleibt unangetastet (Nutzerentscheidung, um zu verhindern,
-  //   dass ein reiner Preis-Import den aktuellen Bestand überschreibt).
-  // - Neues Ersatzteil (kein Name-Treffer): wird mit Bestand (falls angegeben, sonst 0) und
-  //   den Preisen neu angelegt.
+  // - Zeile MIT Artikelnummer: die Artikelnummer ist die eindeutige ID.
+  //   - Existiert die ID schon: Bezeichnung wird aktualisiert (ERP ist hier führend), aber
+  //     NUR EK-/VK-Preis werden aus der Datei übernommen - der live gepflegte Lagerbestand
+  //     bleibt unangetastet (Nutzerentscheidung, um zu verhindern, dass ein reiner
+  //     Preis-Import den aktuellen Bestand überschreibt).
+  //   - Existiert die ID noch nicht: neuer Artikel, mit Bestand aus der Datei (falls
+  //     angegeben, sonst 0) und den Preisen.
+  // - Zeile OHNE Artikelnummer (z. B. einfaches Bezeichnung/Bestand/EK/VK-Format ohne
+  //   Nummer-Spalte): wie bisher per Name gematcht, aber NUR gegen andere Artikel ohne
+  //   eigene Artikelnummer - damit ein Namens-Treffer nicht versehentlich einen ERP-Artikel
+  //   mit eigener Artikelnummer überschreibt.
   importLager(rows) {
     const result = { neu: [], aktualisiert: [], fehler: [] };
     if (!Array.isArray(rows)) return result;
     let changed = false;
+    const nameIndex = new Map();
+    Object.values(data.lager).forEach(e => { if (!e.nummer) nameIndex.set(e.name, e.id); });
+
     rows.forEach(r => {
       const name = (r && r.name ? String(r.name) : '').trim();
-      if (!name) { result.fehler.push('Zeile ohne Bezeichnung übersprungen'); return; }
+      const nummer = (r && r.nummer ? String(r.nummer) : '').trim() || null;
+      if (!name && !nummer) { result.fehler.push('Zeile ohne Bezeichnung/Artikelnummer übersprungen'); return; }
       const ekPreis = (r.ekPreis === undefined || r.ekPreis === null || r.ekPreis === '') ? null : Number(r.ekPreis);
       const vkPreis = (r.vkPreis === undefined || r.vkPreis === null || r.vkPreis === '') ? null : Number(r.vkPreis);
       if ((ekPreis !== null && isNaN(ekPreis)) || (vkPreis !== null && isNaN(vkPreis))) {
-        result.fehler.push(name + ': ungültiger Preis');
+        result.fehler.push((name || nummer) + ': ungültiger Preis');
         return;
       }
-      if (data.lager[name]) {
-        if (ekPreis !== null) data.lager[name].ekPreis = ekPreis;
-        if (vkPreis !== null) data.lager[name].vkPreis = vkPreis;
-        result.aktualisiert.push(name);
+      const label = name || nummer;
+
+      let id = nummer || nameIndex.get(name) || null;
+      if (id && data.lager[id]) {
+        if (name) data.lager[id].name = name;
+        if (ekPreis !== null) data.lager[id].ekPreis = ekPreis;
+        if (vkPreis !== null) data.lager[id].vkPreis = vkPreis;
+        result.aktualisiert.push(label);
         changed = true;
       } else {
         const bRaw = (r.bestand === undefined || r.bestand === null || r.bestand === '') ? 0 : Number(r.bestand);
         const bestand = isNaN(bRaw) ? 0 : bRaw;
-        data.lager[name] = { bestand, ekPreis, vkPreis };
-        result.neu.push(name);
+        const newId = nummer || ('M' + (data.nextManualLagerId++));
+        data.lager[newId] = { id: newId, nummer, name: name || newId, bestand, ekPreis, vkPreis };
+        if (!nummer) nameIndex.set(data.lager[newId].name, newId);
+        result.neu.push(label);
         changed = true;
       }
     });

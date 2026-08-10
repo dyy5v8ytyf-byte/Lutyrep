@@ -65,13 +65,23 @@ app.post('/api/mitarbeiter', (req, res) => {
 });
 
 // ---------- Lager ----------
+// Jeder Artikel hat eine eindeutige ID (Artikelnummer aus dem ERP oder "M<n>" für manuell
+// angelegte Teile ohne Artikelnummer) - siehe db.js für die Schema-Erklärung.
 app.get('/api/lager', (req, res) => {
   res.json(db.getLager());
 });
 
-app.put('/api/lager/:name', (req, res) => {
+app.post('/api/lager', (req, res) => {
+  const { name, bestand, ekPreis, vkPreis, nummer } = req.body;
+  if (!name && !nummer) return res.status(400).json({ error: 'name oder nummer fehlt' });
+  res.json(db.addLager(name, bestand, ekPreis, vkPreis, nummer));
+});
+
+app.put('/api/lager/:id', (req, res) => {
   const { bestand, ekPreis, vkPreis } = req.body;
-  res.json(db.putLager(req.params.name, bestand, ekPreis, vkPreis));
+  const result = db.putLager(req.params.id, bestand, ekPreis, vkPreis);
+  if (!result) return res.status(404).json({ error: 'Artikel nicht gefunden' });
+  res.json(result);
 });
 
 // CSV-Import (Artikel/Preise) aus lager.html - siehe db.importLager für die genaue
