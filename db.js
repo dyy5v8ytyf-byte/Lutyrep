@@ -115,6 +115,43 @@ module.exports = {
     persist();
     return { name, ...data.lager[name] };
   },
+  // Ersatzteil-/Preisimport aus CSV (siehe lager.html): bewusst NUR ergänzend/aktualisierend,
+  // niemals überschreibend im Sinne von "alles löschen und neu anlegen" - damit ein Import
+  // niemals versehentlich vorhandene Lagerdaten verliert.
+  // - Bereits vorhandenes Ersatzteil (Name-Treffer): NUR EK-/VK-Preis werden übernommen, der
+  //   live gepflegte Lagerbestand bleibt unangetastet (Nutzerentscheidung, um zu verhindern,
+  //   dass ein reiner Preis-Import den aktuellen Bestand überschreibt).
+  // - Neues Ersatzteil (kein Name-Treffer): wird mit Bestand (falls angegeben, sonst 0) und
+  //   den Preisen neu angelegt.
+  importLager(rows) {
+    const result = { neu: [], aktualisiert: [], fehler: [] };
+    if (!Array.isArray(rows)) return result;
+    let changed = false;
+    rows.forEach(r => {
+      const name = (r && r.name ? String(r.name) : '').trim();
+      if (!name) { result.fehler.push('Zeile ohne Bezeichnung übersprungen'); return; }
+      const ekPreis = (r.ekPreis === undefined || r.ekPreis === null || r.ekPreis === '') ? null : Number(r.ekPreis);
+      const vkPreis = (r.vkPreis === undefined || r.vkPreis === null || r.vkPreis === '') ? null : Number(r.vkPreis);
+      if ((ekPreis !== null && isNaN(ekPreis)) || (vkPreis !== null && isNaN(vkPreis))) {
+        result.fehler.push(name + ': ungültiger Preis');
+        return;
+      }
+      if (data.lager[name]) {
+        if (ekPreis !== null) data.lager[name].ekPreis = ekPreis;
+        if (vkPreis !== null) data.lager[name].vkPreis = vkPreis;
+        result.aktualisiert.push(name);
+        changed = true;
+      } else {
+        const bRaw = (r.bestand === undefined || r.bestand === null || r.bestand === '') ? 0 : Number(r.bestand);
+        const bestand = isNaN(bRaw) ? 0 : bRaw;
+        data.lager[name] = { bestand, ekPreis, vkPreis };
+        result.neu.push(name);
+        changed = true;
+      }
+    });
+    if (changed) persist();
+    return result;
+  },
 
   // ---- Memory (Fehlerbeschreibungen, Komponenten, Arbeitszeiten) ----
   MEMORY_KATEGORIEN,

@@ -22,6 +22,18 @@
   .addRow input{border:1px solid var(--border);border-radius:7px;padding:7px 9px;font-size:.87rem;font-family:inherit;}
   .addRow button{border:none;background:var(--navy);color:#fff;border-radius:7px;padding:7px 14px;font-size:.85rem;font-weight:600;cursor:pointer;}
 
+  .importBox{background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-top:22px;}
+  .importBox h2{margin:0 0 8px;font-size:.95rem;color:var(--navy);}
+  .importBox p{font-size:.82rem;color:var(--muted);margin:4px 0;}
+  .importRow{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center;}
+  .importRow button, .importRow label.fileBtn{border:none;background:var(--navy);color:#fff;border-radius:7px;padding:7px 14px;font-size:.85rem;font-weight:600;cursor:pointer;display:inline-block;}
+  .importRow button.secondary, .importRow label.fileBtn{background:#fff;color:var(--navy);border:1px solid var(--navy);}
+  .importRow input[type=file]{display:none;}
+  .importFileName{font-size:.8rem;color:var(--muted);}
+  .importResult{margin-top:10px;font-size:.82rem;padding:8px 10px;border-radius:7px;display:none;}
+  .importResult.ok{display:block;background:#eef7f0;color:#1f7a48;border:1px solid #bfe3c8;}
+  .importResult.err{display:block;background:#fbeaea;color:#a33131;border:1px solid #f0c3c3;}
+
   @media (max-width: 480px){
     body{padding:14px 10px 40px;}
     header{padding:16px 18px;}
@@ -32,6 +44,8 @@
     input, button{font-size:16px;}
     .addRow{flex-direction:column;align-items:stretch;}
     .addRow input, .addRow button{width:100%;}
+    .importRow{flex-direction:column;align-items:stretch;}
+    .importRow button, .importRow label.fileBtn{width:100%;text-align:center;}
   }
 </style>
 </head>
@@ -53,6 +67,21 @@
     <button id="addBtn">+ Hinzufügen</button>
   </div>
   <p style="font-size:.8rem;color:var(--muted);margin-top:10px;">EK-Preis = Einkaufspreis (was Wwtec zahlt). VK-Preis = Verkaufspreis, der dem Kunden im Kostenvoranschlag berechnet wird.</p>
+
+  <div class="importBox">
+    <h2>📥 Artikel-/Preisimport per CSV</h2>
+    <p>Für Massenpflege in Excel: Liste als CSV exportieren, in Excel bearbeiten (Preise anpassen, neue Ersatzteile anhängen), als CSV speichern und wieder importieren.</p>
+    <p><b>Spalten:</b> Bezeichnung; Bestand; EK-Preis; VK-Preis (Semikolon- oder Komma-getrennt, deutsches Komma als Dezimaltrennzeichen wird erkannt).</p>
+    <p><b>Wichtig:</b> Bei bereits vorhandenen Ersatzteilen (gleiche Bezeichnung) werden beim Import <b>nur die Preise</b> übernommen – der aktuelle Lagerbestand bleibt unangetastet und wird nicht überschrieben. Neue Ersatzteile werden mit dem angegebenen Bestand neu angelegt.</p>
+    <div class="importRow">
+      <button id="exportCsvBtn" type="button" class="secondary">⬇️ Aktuelle Liste als CSV exportieren</button>
+      <label class="fileBtn" for="importFile">📄 CSV-Datei wählen</label>
+      <input type="file" id="importFile" accept=".csv,text/csv">
+      <span class="importFileName" id="importFileName">keine Datei gewählt</span>
+      <button id="importCsvBtn" type="button">⬆️ Importieren</button>
+    </div>
+    <div class="importResult" id="importResult"></div>
+  </div>
 </div>
 <script>
 async function load(){
@@ -61,10 +90,10 @@ async function load(){
   const tbody = document.getElementById('tbody');
   tbody.innerHTML = Object.entries(data).sort((a,b)=>a[0].localeCompare(b[0],'de')).map(([name,v])=>`
     <tr>
-      <td>${name}</td>
-      <td><input type="number" min="0" data-name="${name}" data-field="bestand" value="${v.bestand}"></td>
-      <td><input type="number" min="0" step="0.01" data-name="${name}" data-field="ekPreis" value="${v.ekPreis ?? ''}"></td>
-      <td><input type="number" min="0" step="0.01" data-name="${name}" data-field="vkPreis" value="${v.vkPreis ?? ''}"></td>
+      <td>${esc(name)}</td>
+      <td><input type="number" min="0" data-name="${esc(name)}" data-field="bestand" value="${v.bestand}"></td>
+      <td><input type="number" min="0" step="0.01" data-name="${esc(name)}" data-field="ekPreis" value="${v.ekPreis ?? ''}"></td>
+      <td><input type="number" min="0" step="0.01" data-name="${esc(name)}" data-field="vkPreis" value="${v.vkPreis ?? ''}"></td>
       <td><span class="savedTag" id="tag-${cssId(name)}">gespeichert ✓</span></td>
     </tr>
   `).join('');
@@ -80,6 +109,7 @@ async function load(){
     });
   });
 }
+function esc(s){ return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function cssId(name){ return name.replace(/[^a-zA-Z0-9]/g,'_'); }
 document.getElementById('addBtn').addEventListener('click', async ()=>{
   const name = document.getElementById('newName').value.trim();
@@ -91,6 +121,128 @@ document.getElementById('addBtn').addEventListener('click', async ()=>{
   document.getElementById('newName').value=''; document.getElementById('newBestand').value=0; document.getElementById('newEkPreis').value=''; document.getElementById('newVkPreis').value='';
   load();
 });
+
+// ---- CSV-Export ----
+document.getElementById('exportCsvBtn').addEventListener('click', async ()=>{
+  const res = await fetch('/api/lager');
+  const data = await res.json();
+  const zeilen = ['Bezeichnung;Bestand;EK-Preis;VK-Preis'];
+  Object.entries(data).sort((a,b)=>a[0].localeCompare(b[0],'de')).forEach(([name, v])=>{
+    const csvEsc = s => '"' + String(s).replace(/"/g,'""') + '"';
+    const ek = v.ekPreis != null ? String(v.ekPreis).replace('.', ',') : '';
+    const vk = v.vkPreis != null ? String(v.vkPreis).replace('.', ',') : '';
+    zeilen.push([csvEsc(name), v.bestand, ek, vk].join(';'));
+  });
+  // BOM (﻿) voranstellen, damit Excel Umlaute korrekt anzeigt
+  const blob = new Blob(['﻿' + zeilen.join('\r\n')], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'lutyrep-lagerbestand.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+// ---- CSV-Import ----
+let importFileHandle = null;
+document.getElementById('importFile').addEventListener('change', (e)=>{
+  importFileHandle = e.target.files[0] || null;
+  document.getElementById('importFileName').textContent = importFileHandle ? importFileHandle.name : 'keine Datei gewählt';
+});
+
+function splitCsvLine(line, delim){
+  const out = [];
+  let cur = '', inQuotes = false;
+  for(let i=0;i<line.length;i++){
+    const c = line[i];
+    if(inQuotes){
+      if(c === '"'){
+        if(line[i+1] === '"'){ cur += '"'; i++; }
+        else { inQuotes = false; }
+      } else cur += c;
+    } else {
+      if(c === '"') inQuotes = true;
+      else if(c === delim){ out.push(cur); cur = ''; }
+      else cur += c;
+    }
+  }
+  out.push(cur);
+  return out.map(s => s.trim());
+}
+function detectDelimiter(headerLine){
+  return (headerLine.split(';').length >= headerLine.split(',').length) ? ';' : ',';
+}
+function parseZahl(s){
+  if(s === undefined || s === null) return null;
+  const t = String(s).trim();
+  if(t === '') return null;
+  let norm = t;
+  if(norm.includes(',') && norm.includes('.')){
+    norm = norm.replace(/\./g, '').replace(',', '.'); // 1.234,56 -> 1234.56
+  } else if(norm.includes(',')){
+    norm = norm.replace(',', '.'); // 5,50 -> 5.50
+  }
+  const n = parseFloat(norm);
+  return isNaN(n) ? null : n;
+}
+function normHeader(h){
+  return String(h||'').toLowerCase().trim().replace(/[^a-z0-9äöüß]/g,'');
+}
+function showImportResult(text, isError){
+  const el = document.getElementById('importResult');
+  el.textContent = text;
+  el.className = 'importResult ' + (isError ? 'err' : 'ok');
+}
+
+document.getElementById('importCsvBtn').addEventListener('click', async ()=>{
+  if(!importFileHandle){ showImportResult('Bitte zuerst eine CSV-Datei auswählen.', true); return; }
+  let text;
+  try { text = await importFileHandle.text(); }
+  catch(e){ showImportResult('Datei konnte nicht gelesen werden: ' + e.message, true); return; }
+
+  const lines = text.split(/\r?\n/).filter(l => l.trim() !== '');
+  if(!lines.length){ showImportResult('Datei ist leer.', true); return; }
+
+  const delim = detectDelimiter(lines[0]);
+  const header = splitCsvLine(lines[0], delim).map(normHeader);
+  const idx = {
+    name: header.findIndex(h => ['bezeichnung','name','artikel','ersatzteil'].includes(h)),
+    bestand: header.findIndex(h => ['bestand','menge','anzahl','stück','stk','stueck','iststand'].includes(h)),
+    ekPreis: header.findIndex(h => ['ekpreis','ek','einkaufspreis'].includes(h)),
+    vkPreis: header.findIndex(h => ['vkpreis','vk','verkaufspreis'].includes(h))
+  };
+  if(idx.name === -1){
+    showImportResult('Spalte "Bezeichnung" wurde in der Kopfzeile nicht gefunden. Bitte die Export-Vorlage als Muster verwenden.', true);
+    return;
+  }
+
+  const rows = [];
+  for(let i=1; i<lines.length; i++){
+    const cells = splitCsvLine(lines[i], delim);
+    const name = (cells[idx.name] || '').trim();
+    if(!name) continue;
+    rows.push({
+      name,
+      bestand: idx.bestand !== -1 ? parseZahl(cells[idx.bestand]) : null,
+      ekPreis: idx.ekPreis !== -1 ? parseZahl(cells[idx.ekPreis]) : null,
+      vkPreis: idx.vkPreis !== -1 ? parseZahl(cells[idx.vkPreis]) : null
+    });
+  }
+  if(!rows.length){ showImportResult('Keine gültigen Zeilen in der Datei gefunden.', true); return; }
+
+  try {
+    const res = await fetch('/api/lager/import', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({rows}) });
+    const result = await res.json();
+    const teile = [];
+    teile.push(result.neu.length + ' neu angelegt');
+    teile.push(result.aktualisiert.length + ' aktualisiert (nur Preise)');
+    if(result.fehler.length) teile.push(result.fehler.length + ' Fehler: ' + result.fehler.join('; '));
+    showImportResult(teile.join(', ') + '.', result.fehler.length > 0 && !result.neu.length && !result.aktualisiert.length);
+    load();
+  } catch(e){
+    showImportResult('Import fehlgeschlagen: ' + e.message, true);
+  }
+});
+
 load();
 </script>
 </body>

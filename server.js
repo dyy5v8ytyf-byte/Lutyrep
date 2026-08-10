@@ -74,6 +74,13 @@ app.put('/api/lager/:name', (req, res) => {
   res.json(db.putLager(req.params.name, bestand, ekPreis, vkPreis));
 });
 
+// CSV-Import (Artikel/Preise) aus lager.html - siehe db.importLager für die genaue
+// "nicht überschreiben, nur ergänzen/Preise aktualisieren"-Logik.
+app.post('/api/lager/import', (req, res) => {
+  const rows = Array.isArray(req.body.rows) ? req.body.rows : [];
+  res.json(db.importLager(rows));
+});
+
 // ---------- Memory (Fehlerbeschreibungen, Komponenten, Arbeitszeiten) ----------
 app.get('/api/memory', (req, res) => {
   res.json(db.getMemory());
