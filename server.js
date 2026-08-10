@@ -3,16 +3,22 @@
 
 const express = require('express');
 const path = require('path');
+const crypto = require('crypto');
 const db = require('./db');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
 // ---------- Einfacher Passwortschutz (HTTP Basic Auth) für die gesamte App ----------
-const crypto = require('crypto');
+// Schützt jede Seite und jede API-Route, inkl. statischer Dateien. Zugangsdaten über
+// Umgebungsvariablen LUTYREP_USER / LUTYREP_PASS konfigurierbar (bei Cloud-Hosting z. B.
+// auf Railway gesetzt). Ohne gesetzte Variablen gilt ein Standard-Login (siehe Warnung
+// unten) - bitte bei Erstinbetriebnahme unbedingt ändern, sonst kennt jeder das Passwort,
+// der diesen Code irgendwo sieht.
 const LUTYREP_USER = process.env.LUTYREP_USER || 'wwtec';
 const LUTYREP_PASS = process.env.LUTYREP_PASS || 'wwtec2026';
 if (!process.env.LUTYREP_USER || !process.env.LUTYREP_PASS) {
-  console.warn('WARNUNG: LUTYREP_USER/LUTYREP_PASS nicht gesetzt - Standard-Zugangsdaten aktiv.');
+  console.warn('WARNUNG: LUTYREP_USER/LUTYREP_PASS nicht per Umgebungsvariable gesetzt - Standard-Zugangsdaten aktiv (Benutzername "wwtec"). Bitte ändern!');
 }
 function sicherVergleichen(a, b) {
   const bufA = Buffer.from(a);
@@ -37,7 +43,14 @@ app.use((req, res, next) => {
   }
   res.set('WWW-Authenticate', 'Basic realm="Lutyrep", charset="UTF-8"');
   res.status(401).send('Zugang verweigert. Bitte Benutzername und Passwort eingeben.');
-});app.use(express.json());
+});
+
+// Limit hochgesetzt (Standard bei Express ist nur 100kb): Aufträge mit Fotos
+// (Wareneingang, bis zu 3 Stück als Base64-JPEG) überschreiten 100kb sehr leicht,
+// wodurch Speichern/Archivieren sonst mit "413 Payload Too Large" fehlschlägt -
+// das war die Ursache dafür, dass abgeschlossene Aufträge mit Fotos nicht im
+// Archiv ankamen.
+app.use(express.json({ limit: '20mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ---------- Mitarbeiter ----------
@@ -57,8 +70,8 @@ app.get('/api/lager', (req, res) => {
 });
 
 app.put('/api/lager/:name', (req, res) => {
-  const { bestand, ekPreis } = req.body;
-  res.json(db.putLager(req.params.name, bestand, ekPreis));
+  const { bestand, ekPreis, vkPreis } = req.body;
+  res.json(db.putLager(req.params.name, bestand, ekPreis, vkPreis));
 });
 
 // ---------- Memory (Fehlerbeschreibungen, Komponenten, Arbeitszeiten) ----------

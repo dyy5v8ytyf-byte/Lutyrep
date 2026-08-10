@@ -21,30 +21,32 @@ const DATA_FILE = path.join(DATA_DIR, 'lutyrep.json');
 const MEMORY_KATEGORIEN = ['fehler_kunde', 'fehler_techniker', 'fehlerbild_ruecklauf', 'komponenten_eingang', 'austausch_komponenten', 'arbeitszeiten'];
 
 // Seed: Lagerbestand aus Lagerabgleich_Ersatzteile.xlsx (nur beim allerersten Start)
+// ekPreis = Einkaufspreis (was Wwtec zahlt), vkPreis = Verkaufspreis (was dem Kunden
+// im Kostenvoranschlag berechnet wird) - beide getrennt erfassbar.
 const seedLager = {
-  "Netzkabel":            { bestand:24, ekPreis:null },
-  "HF-Kabel":             { bestand:15, ekPreis:null },
-  "Erdungskabel":         { bestand:9,  ekPreis:null },
-  "Steuerungskabel 1":    { bestand:6,  ekPreis:null },
-  "Steuerungskabel 2":    { bestand:3,  ekPreis:null },
-  "SP/USP 340":           { bestand:4,  ekPreis:null },
-  "SP640V2":              { bestand:2,  ekPreis:null },
-  "Al-Koffer":            { bestand:12, ekPreis:null },
-  "Schallkopf Typ A":     { bestand:3,  ekPreis:null },
-  "Schallkopf Typ B":     { bestand:1,  ekPreis:null },
-  "Schallkopf Typ C":     { bestand:5,  ekPreis:null },
-  "Sonotrode Standard":   { bestand:7,  ekPreis:null },
-  "Sonotrode Spezial":    { bestand:2,  ekPreis:null },
-  "Netzteil intern":      { bestand:5,  ekPreis:null },
-  "Steuerplatine":        { bestand:2,  ekPreis:null },
-  "Sicherung 2A":         { bestand:40, ekPreis:null },
-  "Gehäusedeckel":        { bestand:6,  ekPreis:null },
-  "Reset-Taster":         { bestand:8,  ekPreis:null }
+  "Netzkabel":            { bestand:24, ekPreis:null, vkPreis:null },
+  "HF-Kabel":             { bestand:15, ekPreis:null, vkPreis:null },
+  "Erdungskabel":         { bestand:9,  ekPreis:null, vkPreis:null },
+  "Steuerungskabel 1":    { bestand:6,  ekPreis:null, vkPreis:null },
+  "Steuerungskabel 2":    { bestand:3,  ekPreis:null, vkPreis:null },
+  "SP/USP 340":           { bestand:4,  ekPreis:null, vkPreis:null },
+  "SP640V2":              { bestand:2,  ekPreis:null, vkPreis:null },
+  "Al-Koffer":            { bestand:12, ekPreis:null, vkPreis:null },
+  "Schallkopf Typ A":     { bestand:3,  ekPreis:null, vkPreis:null },
+  "Schallkopf Typ B":     { bestand:1,  ekPreis:null, vkPreis:null },
+  "Schallkopf Typ C":     { bestand:5,  ekPreis:null, vkPreis:null },
+  "Sonotrode Standard":   { bestand:7,  ekPreis:null, vkPreis:null },
+  "Sonotrode Spezial":    { bestand:2,  ekPreis:null, vkPreis:null },
+  "Netzteil intern":      { bestand:5,  ekPreis:null, vkPreis:null },
+  "Steuerplatine":        { bestand:2,  ekPreis:null, vkPreis:null },
+  "Sicherung 2A":         { bestand:40, ekPreis:null, vkPreis:null },
+  "Gehäusedeckel":        { bestand:6,  ekPreis:null, vkPreis:null },
+  "Reset-Taster":         { bestand:8,  ekPreis:null, vkPreis:null }
 };
 
 function defaultData() {
   const lager = {};
-  Object.entries(seedLager).forEach(([name, v]) => { lager[name] = { bestand: v.bestand, ekPreis: v.ekPreis }; });
+  Object.entries(seedLager).forEach(([name, v]) => { lager[name] = { bestand: v.bestand, ekPreis: v.ekPreis, vkPreis: v.vkPreis }; });
   const memory = {};
   MEMORY_KATEGORIEN.forEach(k => { memory[k] = []; });
   return { mitarbeiter: [], lager, memory, auftraege: [], nextAuftragId: 1 };
@@ -66,6 +68,8 @@ if (fs.existsSync(DATA_FILE)) {
 // Robustheit gegen ältere/unvollständige Datendateien
 data.mitarbeiter = Array.isArray(data.mitarbeiter) ? data.mitarbeiter : [];
 data.lager = data.lager && typeof data.lager === 'object' ? data.lager : {};
+// Migration: ältere Datendateien kennen "vkPreis" noch nicht - Feld nachrüsten
+Object.values(data.lager).forEach(entry => { if (entry && !('vkPreis' in entry)) entry.vkPreis = null; });
 data.memory = data.memory && typeof data.memory === 'object' ? data.memory : {};
 MEMORY_KATEGORIEN.forEach(k => { if (!Array.isArray(data.memory[k])) data.memory[k] = []; });
 data.auftraege = Array.isArray(data.auftraege) ? data.auftraege : [];
@@ -102,11 +106,12 @@ module.exports = {
     });
     return out;
   },
-  putLager(name, bestand, ekPreis) {
-    const current = data.lager[name] || { bestand: 0, ekPreis: null };
+  putLager(name, bestand, ekPreis, vkPreis) {
+    const current = data.lager[name] || { bestand: 0, ekPreis: null, vkPreis: null };
     const newBestand = (bestand === undefined || bestand === null) ? current.bestand : bestand;
     const newEkPreis = (ekPreis === undefined || ekPreis === null) ? current.ekPreis : ekPreis;
-    data.lager[name] = { bestand: newBestand, ekPreis: newEkPreis };
+    const newVkPreis = (vkPreis === undefined || vkPreis === null) ? current.vkPreis : vkPreis;
+    data.lager[name] = { bestand: newBestand, ekPreis: newEkPreis, vkPreis: newVkPreis };
     persist();
     return { name, ...data.lager[name] };
   },

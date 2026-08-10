@@ -236,7 +236,7 @@
 
     if(ersatzteile.length){
       html += `<div class="d-section"><h3>Verwendete Ersatzteile</h3><div class="parts-list">${
-        ersatzteile.map(p=>`<div class="row"><span>${esc(p.name)} — Menge: ${esc(p.qty)}</span><span>EK: ${fmtEUR(p.ekPreis||0)}</span></div>`).join('')
+        ersatzteile.map(p=>`<div class="row"><span>${esc(p.name)} — Menge: ${esc(p.qty)}</span><span>VK: ${fmtEUR(p.vkPreis||0)} <span style="color:var(--muted);">(EK: ${fmtEUR(p.ekPreis||0)})</span></span></div>`).join('')
       }</div></div>`;
     }
 

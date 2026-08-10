@@ -173,10 +173,17 @@
   .seg button.active-ok{background:var(--green);color:#fff;}
   .seg button.active-bad{background:var(--red);color:#fff;}
 
-  .parts-add{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;align-items:center;}
-  .parts-add input[type=text]{flex:2;min-width:160px;border:1px solid var(--border);border-radius:7px;padding:7px 9px;font-size:.87rem;font-family:inherit;}
+  .parts-add{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;align-items:flex-start;}
+  .part-name-wrap{position:relative;flex:2;min-width:160px;}
+  .part-name-wrap input[type=text]{width:100%;border:1px solid var(--border);border-radius:7px;padding:7px 9px;font-size:.87rem;font-family:inherit;}
   .parts-add input[type=number]{width:80px;border:1px solid var(--border);border-radius:7px;padding:7px 9px;font-size:.87rem;font-family:inherit;}
   .parts-add button{border:none;background:var(--navy);color:#fff;border-radius:7px;padding:7px 14px;font-size:.85rem;font-weight:600;cursor:pointer;}
+  .part-dropdown{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 10px 24px rgba(28,42,58,.18);max-height:230px;overflow-y:auto;z-index:60;}
+  .part-dropdown.show{display:block;}
+  .part-dropdown .opt{padding:9px 12px;font-size:.87rem;cursor:pointer;border-bottom:1px solid #f0f2f5;}
+  .part-dropdown .opt:last-child{border-bottom:none;}
+  .part-dropdown .opt:hover, .part-dropdown .opt.hi{background:var(--light);}
+  .part-dropdown .opt-empty{padding:9px 12px;font-size:.8rem;color:var(--muted);}
   .part-info{font-size:.78rem;color:var(--muted);margin-top:4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
   .part-info input[type=number]{width:70px;border:1px solid var(--border);border-radius:6px;padding:3px 6px;font-size:.78rem;}
   .parts-list{margin-top:8px;font-size:.87rem;}
@@ -428,11 +435,12 @@
       <div class="item-full" style="padding:8px 0;">
         <label style="font-weight:600;font-size:.92rem;">Benötigte Ersatzteile (Lagerabgleich)</label>
         <div class="parts-add">
-          <input type="text" id="partName" list="ersatzteile-liste" placeholder="Ersatzteil wählen oder eingeben...">
-          <input type="number" id="partQty" min="1" value="1" placeholder="Menge">
+          <div class="part-name-wrap">
+            <input type="text" id="partName" placeholder="Ersatzteil wählen oder eingeben..." autocomplete="off">
+            <div class="part-dropdown" id="partDropdown"></div>
+          </div>
           <button id="addPartBtn" type="button">+ Hinzufügen</button>
         </div>
-        <datalist id="ersatzteile-liste"></datalist>
         <div class="part-info" id="partInfo" style="display:none;">
           Lagerbestand aktuell: <span id="partBestandText">–</span> Stk ·
           anpassen: <input type="number" id="partBestandAdjust" min="0"> ·
@@ -604,6 +612,7 @@
   }
 
   function fmtEUR(n){ return (n||0).toLocaleString('de-DE', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' €'; }
+  function esc(s){ return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
   function setAktuellesDatumWennLeer(){
     const el = document.getElementById('m_datum');
@@ -614,15 +623,35 @@
     el.value = datum + ' ' + uhrzeit;
   }
 
-  function refreshDatalist(){
-    const dl = document.getElementById('ersatzteile-liste');
-    dl.innerHTML = '';
-    Object.keys(LAGER_DB).forEach(t=>{
-      const o = document.createElement('option');
-      o.value = t;
-      dl.appendChild(o);
-    });
+  // ---- Ersatzteil-Auswahl: eigene Dropdown-Liste statt <datalist> ----
+  // <datalist> öffnet auf vielen Browsern (v.a. mobil/Safari) nicht zuverlässig von
+  // selbst und zeigt nicht immer die volle Liste - deshalb hier eine eigene, klickbare
+  // Liste, die beim Antippen/Fokussieren des Feldes garantiert aufklappt.
+  function filteredPartNames(q){
+    const query = (q || '').trim().toLowerCase();
+    return Object.keys(LAGER_DB)
+      .filter(name => !query || name.toLowerCase().includes(query))
+      .sort((a, b) => a.localeCompare(b, 'de', { sensitivity: 'base' }));
   }
+  function renderPartDropdown(){
+    const dd = document.getElementById('partDropdown');
+    if(!dd || !partNameInp) return;
+    const names = filteredPartNames(partNameInp.value);
+    if(!names.length){
+      dd.innerHTML = '<div class="opt-empty">Kein passendes Teil im Lager – wird beim Hinzufügen als neues Teil angelegt.</div>';
+    } else {
+      dd.innerHTML = names.map(n => `<div class="opt" data-name="${esc(n)}">${esc(n)}</div>`).join('');
+    }
+  }
+  function showPartDropdown(){
+    renderPartDropdown();
+    document.getElementById('partDropdown').classList.add('show');
+  }
+  function hidePartDropdown(){
+    const dd = document.getElementById('partDropdown');
+    if(dd) dd.classList.remove('show');
+  }
+  function refreshDatalist(){ renderPartDropdown(); }
 
   // ---- API Helfer ----
   async function apiGet(url){ const r = await fetch(url); return r.json(); }
@@ -795,7 +824,9 @@
       partInfoBox.style.display = 'flex';
       partBestandText.textContent = entry.bestand;
       partBestandAdjust.value = entry.bestand;
-      partPreisText.textContent = entry.ekPreis != null ? fmtEUR(entry.ekPreis) : 'noch nicht erfasst';
+      const ekTxt = entry.ekPreis != null ? fmtEUR(entry.ekPreis) : '–';
+      const vkTxt = entry.vkPreis != null ? fmtEUR(entry.vkPreis) : '–';
+      partPreisText.textContent = 'EK ' + ekTxt + ' / VK ' + vkTxt;
     } else {
       partInfoBox.style.display = name ? 'flex' : 'none';
       if(name){ partBestandText.textContent = 'neues Teil'; partBestandAdjust.value = 0; partPreisText.textContent = 'wird beim Hinzufügen erfragt'; }
@@ -807,7 +838,23 @@
     partBestandText = document.getElementById('partBestandText');
     partBestandAdjust = document.getElementById('partBestandAdjust');
     partPreisText = document.getElementById('partPreisText');
-    partNameInp.addEventListener('input', refreshPartInfo);
+    partNameInp.addEventListener('input', ()=>{ refreshPartInfo(); renderPartDropdown(); });
+    partNameInp.addEventListener('focus', showPartDropdown);
+    partNameInp.addEventListener('click', showPartDropdown);
+    const partDropdownEl = document.getElementById('partDropdown');
+    // mousedown statt click: feuert VOR dem blur-Event des Textfelds, sonst wäre die
+    // Liste schon versteckt (und der Klick träfe ins Leere), bevor die Auswahl zählt.
+    partDropdownEl.addEventListener('mousedown', (e)=>{
+      const opt = e.target.closest('.opt');
+      if(!opt) return;
+      e.preventDefault();
+      partNameInp.value = opt.dataset.name;
+      refreshPartInfo();
+      hidePartDropdown();
+    });
+    document.addEventListener('click', (e)=>{
+      if(!e.target.closest('.part-name-wrap')) hidePartDropdown();
+    });
     partBestandAdjust.addEventListener('change', async ()=>{
       const name = partNameInp.value.trim();
       if(LAGER_DB[name]){
@@ -820,7 +867,7 @@
   function renderParts(){
     const el = document.getElementById('partsList');
     el.innerHTML = ersatzteile.map((p, i)=>
-      `<div class="row"><span>${p.name} — Menge: ${p.qty} · EK: ${fmtEUR(p.ekPreis||0)}</span><button data-i="${i}" type="button">entfernen</button></div>`
+      `<div class="row"><span>${esc(p.name)} — Menge: ${p.qty} · VK: ${fmtEUR(p.vkPreis||0)} <span style="color:var(--muted);">(EK: ${fmtEUR(p.ekPreis||0)})</span></span><button data-i="${i}" type="button">entfernen</button></div>`
     ).join('');
     el.querySelectorAll('button').forEach(b=>{
       b.addEventListener('click', ()=>{
@@ -832,33 +879,44 @@
     });
   }
 
+  async function parseEuroPrompt(message, defaultValue){
+    const str = await showPromptText(message, defaultValue ?? '');
+    return parseFloat((str || '0').replace(',', '.')) || 0;
+  }
+
   section('Ersatzteil-hinzufügen-Button', ()=>{
     document.getElementById('addPartBtn').addEventListener('click', async ()=>{
       const name = partNameInp.value.trim();
-      const qtyInp = document.getElementById('partQty');
-      const qty = Number(qtyInp.value) || 1;
       if(!name) return;
+      hidePartDropdown();
+
+      // Menge wird jetzt aktiv per Dialog erfragt statt still auf 1 zu stehen -
+      // dadurch übersieht niemand mehr, dass eine Menge > 1 nötig wäre.
+      const qtyStr = await showPromptText('Menge (Stück) für "' + name + '"?', '1');
+      const qty = Math.max(1, Number(qtyStr) || 1);
 
       if(!LAGER_DB[name]){
         const bestandStr = await showPromptText('Neues Ersatzteil "' + name + '" – aktueller Lagerbestand (Stk)?', '0');
         const initBestand = Number(bestandStr) || 0;
-        const preisStr = await showPromptText('EK-Preis (€) für "' + name + '"?', '');
-        const initPreis = parseFloat((preisStr || '0').replace(',', '.')) || 0;
-        LAGER_DB[name] = { bestand: initBestand, ekPreis: initPreis };
-        refreshDatalist();
-      } else if(LAGER_DB[name].ekPreis == null){
-        const preisStr = await showPromptText('EK-Preis (€) für "' + name + '"?', '');
-        const preis = parseFloat((preisStr || '0').replace(',', '.')) || 0;
-        LAGER_DB[name].ekPreis = preis;
+        const initEkPreis = await parseEuroPrompt('EK-Preis (€, Einkauf) für "' + name + '"?', '');
+        const initVkPreis = await parseEuroPrompt('VK-Preis (€, wird dem Kunden berechnet) für "' + name + '"?', '');
+        LAGER_DB[name] = { bestand: initBestand, ekPreis: initEkPreis, vkPreis: initVkPreis };
+        renderPartDropdown();
+      } else {
+        if(LAGER_DB[name].ekPreis == null){
+          LAGER_DB[name].ekPreis = await parseEuroPrompt('EK-Preis (€, Einkauf) für "' + name + '"?', '');
+        }
+        if(LAGER_DB[name].vkPreis == null){
+          LAGER_DB[name].vkPreis = await parseEuroPrompt('VK-Preis (€, wird dem Kunden berechnet) für "' + name + '"?', '');
+        }
       }
 
       LAGER_DB[name].bestand = Math.max(0, LAGER_DB[name].bestand - qty);
-      ersatzteile.push({ name, qty, ekPreis: LAGER_DB[name].ekPreis });
+      ersatzteile.push({ name, qty, ekPreis: LAGER_DB[name].ekPreis, vkPreis: LAGER_DB[name].vkPreis });
 
-      await apiPut('/api/lager/' + encodeURIComponent(name), { bestand: LAGER_DB[name].bestand, ekPreis: LAGER_DB[name].ekPreis });
+      await apiPut('/api/lager/' + encodeURIComponent(name), { bestand: LAGER_DB[name].bestand, ekPreis: LAGER_DB[name].ekPreis, vkPreis: LAGER_DB[name].vkPreis });
 
       partNameInp.value = '';
-      qtyInp.value = 1;
       refreshPartInfo();
       renderParts();
       updateProgress();
@@ -928,13 +986,14 @@
   async function sicherstellenEkPreise(){
     for(const p of ersatzteile){
       if(!p.ekPreis){
-        const preisStr = await showPromptText('EK-Preis (€) für "' + p.name + '" fehlt noch – bitte eingeben:', '');
-        const preis = parseFloat((preisStr || '0').replace(',', '.')) || 0;
-        p.ekPreis = preis;
-        if(LAGER_DB[p.name]){
-          LAGER_DB[p.name].ekPreis = preis;
-          await apiPut('/api/lager/' + encodeURIComponent(p.name), { ekPreis: preis });
-        }
+        p.ekPreis = await parseEuroPrompt('EK-Preis (€, Einkauf) für "' + p.name + '" fehlt noch – bitte eingeben:', '');
+        if(LAGER_DB[p.name]) LAGER_DB[p.name].ekPreis = p.ekPreis;
+        await apiPut('/api/lager/' + encodeURIComponent(p.name), { ekPreis: p.ekPreis });
+      }
+      if(!p.vkPreis){
+        p.vkPreis = await parseEuroPrompt('VK-Preis (€, wird dem Kunden berechnet) für "' + p.name + '" fehlt noch – bitte eingeben:', '');
+        if(LAGER_DB[p.name]) LAGER_DB[p.name].vkPreis = p.vkPreis;
+        await apiPut('/api/lager/' + encodeURIComponent(p.name), { vkPreis: p.vkPreis });
       }
     }
   }
@@ -957,7 +1016,9 @@
 
       const totalMin = computeTotalMinutes();
       const totalStd = totalMin / 60;
-      const materialCost = ersatzteile.reduce((s,p)=> s + p.qty * (p.ekPreis||0), 0);
+      // Kostenvoranschlag für den Kunden: Verkaufspreis (VK), nicht Einkaufspreis (EK) -
+      // der EK bleibt intern für den Lagerabgleich erhalten, siehe renderParts().
+      const materialCost = ersatzteile.reduce((s,p)=> s + p.qty * (p.vkPreis||0), 0);
       const laborCost = totalStd * STUNDENLOHN;
       const kvTotal = materialCost + laborCost;
       state.kvBetrag = kvTotal;

@@ -42,15 +42,17 @@
     <h1>📦 Lagerbestand (zentral, für alle Nutzer)</h1>
   </header>
   <table>
-    <thead><tr><th>Bezeichnung</th><th>Ist-Bestand</th><th>EK-Preis (€)</th><th></th></tr></thead>
+    <thead><tr><th>Bezeichnung</th><th>Ist-Bestand</th><th>EK-Preis (€)</th><th>VK-Preis (€)</th><th></th></tr></thead>
     <tbody id="tbody"></tbody>
   </table>
   <div class="addRow">
     <input type="text" id="newName" placeholder="Neues Ersatzteil...">
     <input type="number" id="newBestand" placeholder="Bestand" value="0">
-    <input type="number" id="newPreis" placeholder="EK-Preis €" step="0.01">
+    <input type="number" id="newEkPreis" placeholder="EK-Preis €" step="0.01">
+    <input type="number" id="newVkPreis" placeholder="VK-Preis €" step="0.01">
     <button id="addBtn">+ Hinzufügen</button>
   </div>
+  <p style="font-size:.8rem;color:var(--muted);margin-top:10px;">EK-Preis = Einkaufspreis (was Wwtec zahlt). VK-Preis = Verkaufspreis, der dem Kunden im Kostenvoranschlag berechnet wird.</p>
 </div>
 <script>
 async function load(){
@@ -62,6 +64,7 @@ async function load(){
       <td>${name}</td>
       <td><input type="number" min="0" data-name="${name}" data-field="bestand" value="${v.bestand}"></td>
       <td><input type="number" min="0" step="0.01" data-name="${name}" data-field="ekPreis" value="${v.ekPreis ?? ''}"></td>
+      <td><input type="number" min="0" step="0.01" data-name="${name}" data-field="vkPreis" value="${v.vkPreis ?? ''}"></td>
       <td><span class="savedTag" id="tag-${cssId(name)}">gespeichert ✓</span></td>
     </tr>
   `).join('');
@@ -82,9 +85,10 @@ document.getElementById('addBtn').addEventListener('click', async ()=>{
   const name = document.getElementById('newName').value.trim();
   if(!name) return;
   const bestand = Number(document.getElementById('newBestand').value) || 0;
-  const ekPreis = document.getElementById('newPreis').value === '' ? null : Number(document.getElementById('newPreis').value);
-  await fetch('/api/lager/' + encodeURIComponent(name), { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({bestand, ekPreis}) });
-  document.getElementById('newName').value=''; document.getElementById('newBestand').value=0; document.getElementById('newPreis').value='';
+  const ekPreis = document.getElementById('newEkPreis').value === '' ? null : Number(document.getElementById('newEkPreis').value);
+  const vkPreis = document.getElementById('newVkPreis').value === '' ? null : Number(document.getElementById('newVkPreis').value);
+  await fetch('/api/lager/' + encodeURIComponent(name), { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({bestand, ekPreis, vkPreis}) });
+  document.getElementById('newName').value=''; document.getElementById('newBestand').value=0; document.getElementById('newEkPreis').value=''; document.getElementById('newVkPreis').value='';
   load();
 });
 load();
