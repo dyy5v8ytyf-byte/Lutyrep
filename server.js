@@ -7,8 +7,37 @@ const db = require('./db');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
-app.use(express.json());
+// ---------- Einfacher Passwortschutz (HTTP Basic Auth) für die gesamte App ----------
+const crypto = require('crypto');
+const LUTYREP_USER = process.env.LUTYREP_USER || 'wwtec';
+const LUTYREP_PASS = process.env.LUTYREP_PASS || 'wwtec2026';
+if (!process.env.LUTYREP_USER || !process.env.LUTYREP_PASS) {
+  console.warn('WARNUNG: LUTYREP_USER/LUTYREP_PASS nicht gesetzt - Standard-Zugangsdaten aktiv.');
+}
+function sicherVergleichen(a, b) {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+app.use((req, res, next) => {
+  const auth = req.headers.authorization || '';
+  const [scheme, encoded] = auth.split(' ');
+  if (scheme === 'Basic' && encoded) {
+    let decoded = '';
+    try { decoded = Buffer.from(encoded, 'base64').toString('utf8'); } catch (_) {}
+    const sepIdx = decoded.indexOf(':');
+    if (sepIdx !== -1) {
+      const user = decoded.slice(0, sepIdx);
+      const pass = decoded.slice(sepIdx + 1);
+      if (sicherVergleichen(user, LUTYREP_USER) && sicherVergleichen(pass, LUTYREP_PASS)) {
+        return next();
+      }
+    }
+  }
+  res.set('WWW-Authenticate', 'Basic realm="Lutyrep", charset="UTF-8"');
+  res.status(401).send('Zugang verweigert. Bitte Benutzername und Passwort eingeben.');
+});app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ---------- Mitarbeiter ----------
