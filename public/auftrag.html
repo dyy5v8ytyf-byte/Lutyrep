@@ -975,6 +975,15 @@
           updateFlow();
           updateProgress();
           scheduleSave();
+          // Bei "KV möglich? Ja" direkt zur nächsten nötigen Eingabe springen (Schritt 3,
+          // Austausch-Komponenten) - das ist der erste Schritt, der zum Erstellen des
+          // Kostenvoranschlags ausgefüllt werden muss.
+          if(group === 'kvDecision' && btn.dataset.val === 'ja'){
+            setTimeout(()=>{
+              const ziel = document.getElementById('ta_austausch_komponenten');
+              if(ziel){ ziel.scrollIntoView({behavior:'smooth', block:'center'}); ziel.focus(); }
+            }, 60);
+          }
         });
       });
     });
