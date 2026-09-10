@@ -397,7 +397,7 @@
           <button data-val="nein" type="button">Nein</button>
         </div>
         <div class="branch" id="branch-kv-nein">
-          Kein Kostenvoranschlag möglich/nötig – weiter direkt zur endgültigen Instandsetzung in der E-Werkstatt (Schritt 3).
+          Weiter zur Ermittlung der Instandsetzungskosten in der E-Werkstatt (Schritt 3). Sobald der Lagerbestand dort geprüft ist, wird automatisch ein Kostenvoranschlag erstellt und die Kundenfreigabe eingeholt.
         </div>
         <div class="branch" id="branch-kv-ja">
           Freigabe Kunde wie gehabt: Weiter zu Schritt 3, dort wird der KV aus Fehlerbild, Ersatzteilen und Arbeitszeit erstellt.
@@ -1099,7 +1099,7 @@
     else if(state.testok === 'ja') status = 'Bereit zur Endkontrolle';
     else if(state.testok === 'nein') status = 'Erneute Instandsetzung nötig';
     else {
-      const phaseBOpen = state.kvDecision === 'nein' || (state.kvDecision === 'ja' && state.freigabeErhalten);
+      const phaseBOpen = state.kvDecision === 'ja' && state.freigabeErhalten;
       if(phaseBOpen && state.kvDecision) status = 'In endgültiger Instandsetzung';
       else if(state.kvDecision === 'ja') status = 'Wartet auf Kundenfreigabe (KV)';
       else if(state.kvDecision === 'nein') status = 'In Diagnose (E-Werkstatt)';
@@ -1118,7 +1118,11 @@
 
     card3.classList.toggle('disabled', !state.kvDecision);
 
-    const phaseBOpen = state.kvDecision === 'nein' || (state.kvDecision === 'ja' && state.freigabeErhalten);
+    // Auch bei "Nein" geht es erst zur Ermittlung der Instandsetzungskosten (Diagnose,
+    // Ersatzteile, Lagerbestand) - direkt in die endgültige Instandsetzung geht es nur noch
+    // über den "Ja"-Zweig mit erteilter Kundenfreigabe (siehe c3d-Checkbox weiter unten,
+    // die "Nein" automatisch zu "Ja" umschaltet, sobald die Kosten bekannt sind).
+    const phaseBOpen = state.kvDecision === 'ja' && state.freigabeErhalten;
     phaseB.classList.toggle('disabled', !phaseBOpen);
     bannerWait.classList.toggle('show', state.kvDecision === 'ja' && !state.freigabeErhalten);
 
@@ -1159,6 +1163,15 @@
     document.querySelectorAll('.card input[type=checkbox]').forEach(cb=>{
       cb.addEventListener('change', ()=>{
         if(cb.id === 'c2d' && state.testok === null){ /* no-op, kept for status recompute */ }
+        // War "Kann KV erstellt werden?" = Nein, ist aber jetzt (Lagerbestand geprüft) die
+        // Instandsetzungskosten in der E-Werkstatt ermittelt, wird automatisch auf "Ja"
+        // umgeschaltet - ab jetzt läuft es wie beim Ja-Zweig: KV erstellen, Kundenfreigabe
+        // abwarten, erst dann endgültige Instandsetzung.
+        if(cb.id === 'c3d' && cb.checked && state.kvDecision === 'nein'){
+          const jaBtn = document.querySelector('.toggle-group[data-group="kvDecision"] button[data-val="ja"]');
+          setToggle('kvDecision', 'ja', jaBtn);
+          updateBranches();
+        }
         updateFlow(); updateProgress(); scheduleSave();
       });
     });

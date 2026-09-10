@@ -72,9 +72,9 @@
 
   <table>
     <thead>
-      <tr><th>Kunde</th><th>Gerätetyp</th><th>Serien-Nr.</th><th>Status</th><th>Zuletzt geändert</th><th></th></tr>
+      <tr><th>WAWI-Nr.</th><th>Kunde</th><th>Gerätetyp</th><th>Serien-Nr.</th><th>Status</th><th>Zuletzt geändert</th><th></th></tr>
     </thead>
-    <tbody id="tbody"><tr><td colspan="6" class="empty">Lädt…</td></tr></tbody>
+    <tbody id="tbody"><tr><td colspan="7" class="empty">Lädt…</td></tr></tbody>
   </table>
 
   <footer>Lutyrep v1.0 · Alle Daten liegen zentral auf diesem Server – jeder Nutzer sieht denselben, aktuellen Stand.</footer>
@@ -126,11 +126,12 @@ async function load(){
   const rows = await res.json();
   const tbody = document.getElementById('tbody');
   if(!rows.length){
-    tbody.innerHTML = '<tr><td colspan="6" class="empty">Noch keine Aufträge angelegt – oben auf „+ Neuer Auftrag" klicken.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" class="empty">Noch keine Aufträge angelegt – oben auf „+ Neuer Auftrag" klicken.</td></tr>';
     return;
   }
   tbody.innerHTML = rows.map(r => `
     <tr onclick="location.href='auftrag.html?id=${r.id}'">
+      <td>${r.wawi || '–'}</td>
       <td>${r.kunde || '–'}</td>
       <td>${r.geraet || '–'}</td>
       <td>${r.serien || '–'}</td>
