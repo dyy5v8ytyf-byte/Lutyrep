@@ -35,8 +35,18 @@
 <div class="wrap">
   <header>
     <a class="back" href="index.html">← zur Übersicht</a>
-    <h1>⚙️ Einstellungen – Fehlerkategorien &amp; Messgrößen</h1>
+    <h1>⚙️ Einstellungen – Stundensatz, Fehlerkategorien &amp; Messgrößen</h1>
   </header>
+
+  <div class="box">
+    <h2>Stundensatz (netto)</h2>
+    <p>Wird im Kostenvoranschlag (Schritt 3) für die erfasste Arbeitszeit verwendet. Bereits erstellte Kostenvoranschläge bleiben unverändert; der neue Satz gilt ab der nächsten KV-Erstellung.</p>
+    <div class="addRow">
+      <input class="einheit" id="satz" type="number" min="1" step="0.01" style="width:140px;"> <span style="align-self:center;font-size:.88rem;">€ / Std. netto</span>
+      <button type="button" id="satzSave">Speichern</button>
+    </div>
+    <div class="msg" id="satzMsg"></div>
+  </div>
 
   <div class="box">
     <h2>Fehlerkategorien</h2>
@@ -66,6 +76,7 @@ function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','
 
 async function load(){
   const cfg = await (await fetch('/api/config')).json();
+  if(document.activeElement !== document.getElementById('satz')) document.getElementById('satz').value = cfg.stundensatz;
   const kat = document.getElementById('kat');
   kat.innerHTML = cfg.fehlerkategorien.length ? cfg.fehlerkategorien.map(k => `
     <tr class="${k.aktiv === false ? 'inaktiv' : ''}"><td class="id">${esc(k.id)}</td><td>${esc(k.name)}</td>
@@ -97,6 +108,13 @@ async function add(liste, nameId, einheitId, msgId){
   if(einheitId) document.getElementById(einheitId).value = '';
   load();
 }
+document.getElementById('satzSave').addEventListener('click', async ()=>{
+  const msg = document.getElementById('satzMsg');
+  const wert = Number(document.getElementById('satz').value);
+  const res = await fetch('/api/config/stundensatz', { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ wert }) });
+  if(res.ok){ const r = await res.json(); msg.className = 'msg'; msg.style.color = 'var(--green)'; msg.textContent = 'Gespeichert: ' + r.stundensatz.toLocaleString('de-DE', {minimumFractionDigits:2}) + ' €/Std. netto'; }
+  else { msg.className = 'msg err'; msg.style.color = ''; msg.textContent = 'Ungültiger Wert.'; }
+});
 document.getElementById('katAdd').addEventListener('click', ()=>add('fehlerkategorien','katName',null,'katMsg'));
 document.getElementById('mgAdd').addEventListener('click', ()=>add('messgroessen','mgName','mgEinheit','mgMsg'));
 ['katName','mgName','mgEinheit'].forEach(id => document.getElementById(id).addEventListener('keydown', e=>{

@@ -313,10 +313,10 @@ async function loadBedarf(){
     document.getElementById('bedarfZahl').textContent = rows.length;
     box.classList.toggle('warn', rows.length > 0);
     if(rows.length){
-      const namen = rows.slice(0, 4).map(r => esc(r.name) + ' (' + esc(r.bestand) + '/' + esc(r.mindestbestand) + ')').join(', ');
+      const namen = rows.slice(0, 4).map(r => esc(r.name) + (r.grund === 'fehlt für Aufträge' ? ' (fehlt ' + esc(r.fehlmenge) + ' für Aufträge)' : ' (' + esc(r.verfuegbar) + '/' + esc(r.mindestbestand) + ')')).join(', ');
       document.getElementById('bedarfTxt').innerHTML = '<b>' + (rows.length === 1 ? 'Teil muss' : 'Teile müssen') + ' nachbestellt werden</b><br><small>' + namen + (rows.length > 4 ? ' …' : '') + ' – klicken für die vollständige Liste</small>';
     } else {
-      document.getElementById('bedarfTxt').innerHTML = '<b>Kein Bestellbedarf</b><br><small>Gemeldet werden nur Teile mit eingetragenem Mindestbestand (Lagerbestand-Seite).</small>';
+      document.getElementById('bedarfTxt').innerHTML = '<b>Kein Bestellbedarf</b><br><small>Gemeldet werden Teile unter Mindestbestand und Teile, die für offene Aufträge fehlen.</small>';
     }
   } catch(_) {
     document.getElementById('bedarfTxt').textContent = 'Bestellbedarf konnte nicht geladen werden.';

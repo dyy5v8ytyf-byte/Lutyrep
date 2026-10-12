@@ -73,7 +73,7 @@
   </div>
 
   <table>
-    <thead><tr><th>Artikelnr.</th><th>Bezeichnung</th><th>Ist-Bestand</th><th>Mindest&shy;bestand</th><th>EK-Preis (€)</th><th>VK-Preis (€)</th><th></th></tr></thead>
+    <thead><tr><th>Artikelnr.</th><th>Bezeichnung</th><th>Ist-Bestand</th><th>Reser&shy;viert</th><th>Mindest&shy;bestand</th><th>EK-Preis (€)</th><th>VK-Preis (€)</th><th></th></tr></thead>
     <tbody id="tbody"></tbody>
   </table>
   <div class="addRow">
@@ -108,6 +108,7 @@ const MAX_ROWS_ANZEIGEN = 300; // Performance-Grenze: bei sehr großen Katalogen
 async function load(){
   const res = await fetch('/api/lager');
   alleArtikel = await res.json();
+  try { RESERV = await (await fetch('/api/reservierungen')).json(); } catch(_) { RESERV = {}; }
   render();
 }
 
@@ -142,6 +143,7 @@ function render(){
       <td class="nummerCell">${esc(v.nummer || '–')}</td>
       <td>${esc(v.name)}</td>
       <td><input type="number" min="0" data-id="${esc(v.id)}" data-field="bestand" value="${v.bestand}"></td>
+      <td class="nummerCell" title="In offenen Aufträgen eingeplant, noch nicht abgebucht">${reserviert(v) || '–'}</td>
       <td><input type="number" min="0" data-id="${esc(v.id)}" data-field="mindestbestand" value="${v.mindestbestand ?? ''}" placeholder="–" title="Leer lassen = keine Bestellbedarf-Meldung für diesen Artikel"></td>
       <td><input type="number" min="0" step="0.01" data-id="${esc(v.id)}" data-field="ekPreis" value="${v.ekPreis ?? ''}"></td>
       <td><input type="number" min="0" step="0.01" data-id="${esc(v.id)}" data-field="vkPreis" value="${v.vkPreis ?? ''}"></td>
@@ -149,7 +151,7 @@ function render(){
     </tr>
   `).join('');
   if(!sichtbar.length){
-    tbody.innerHTML = '<tr><td colspan="7" class="moreNote">Keine Artikel gefunden.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="moreNote">Keine Artikel gefunden.</td></tr>';
   }
   tbody.querySelectorAll('input').forEach(inp=>{
     inp.addEventListener('change', async ()=>{
@@ -168,7 +170,17 @@ function render(){
 document.getElementById('searchInp').addEventListener('input', render);
 document.getElementById('nurBedarf').addEventListener('change', render);
 // Bestellbedarf = Mindestbestand eingetragen UND Ist-Bestand <= Mindestbestand
-function istBedarf(v){ return v && v.mindestbestand !== null && v.mindestbestand !== undefined && v.mindestbestand !== '' && Number(v.bestand) <= Number(v.mindestbestand); }
+// Bestellbedarf = (Ist-Bestand minus Reservierungen offener Aufträge) <= Mindestbestand,
+// oder die Reservierungen übersteigen den Ist-Bestand (Teil fehlt für Aufträge)
+let RESERV = {};
+function reserviert(v){ return v && RESERV[v.id] ? Number(RESERV[v.id].menge) || 0 : 0; }
+function istBedarf(v){
+  if(!v) return false;
+  const res = reserviert(v);
+  const verf = Number(v.bestand) - res;
+  const hatMin = v.mindestbestand !== null && v.mindestbestand !== undefined && v.mindestbestand !== '';
+  return (hatMin && verf <= Number(v.mindestbestand)) || res > Number(v.bestand);
+}
 if(new URLSearchParams(location.search).get('filter') === 'bestellbedarf') document.getElementById('nurBedarf').checked = true;
 
 function esc(s){ return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }

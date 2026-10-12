@@ -280,12 +280,29 @@
 
     if(ersatzteile.length){
       html += `<div class="d-section"><h3>Verwendete Ersatzteile</h3><div class="parts-list">${
-        ersatzteile.map(p=>`<div class="row"><span>${esc(p.name)} — Menge: ${esc(p.qty)}</span><span>VK: ${fmtEUR(p.vkPreis||0)} <span style="color:var(--muted);">(EK: ${fmtEUR(p.ekPreis||0)})</span></span></div>`).join('')
+        ersatzteile.map(p=>`<div class="row"><span>${esc(p.name)} — Menge: ${esc(p.qty)}${p.gebucht === false ? ' <i style="color:var(--muted);">(nur reserviert, nicht abgebucht)</i>' : ''}</span><span>VK: ${fmtEUR(p.vkPreis||0)} <span style="color:var(--muted);">(EK: ${fmtEUR(p.ekPreis||0)})</span></span></div>`).join('')
       }</div></div>`;
     }
 
     if(d.kvResultHtml){
-      html += `<div class="d-section"><h3>Kostenvoranschlag</h3><div class="kv-result">${d.kvResultHtml}</div></div>`;
+      html += `<div class="d-section"><h3>Kostenvoranschlag</h3><div class="kv-result">${d.kvResultHtml}</div>${
+        state.kvFreigegeben != null ? '<div class="d-checklist">Vom Kunden freigegeben: <b>' + fmtEUR(state.kvFreigegeben) + '</b>' + (state.kvFreigegebenAm ? ' am ' + esc(new Date(state.kvFreigegebenAm).toLocaleDateString('de-DE')) : '') + '</div>' : ''}</div>`;
+    }
+    const si3 = d.sicherheit3 || {};
+    if(state.sicherheit3 || si3.rpe || si3.riso || si3.ableit || si3.geraet){
+      html += `<div class="d-section"><h3>Sicherheitsprüfung nach Instandsetzung</h3><div class="d-checklist">
+        Ergebnis: <b>${io(state.sicherheit3)}</b> ·
+        R<sub>PE</sub>: <b>${si3.rpe !== '' && si3.rpe != null ? esc(si3.rpe) + ' Ω' : '–'}</b> ·
+        R<sub>ISO</sub>: <b>${si3.riso !== '' && si3.riso != null ? esc(si3.riso) + ' MΩ' : '–'}</b> ·
+        Schutzleiter-/Berührungsstrom: <b>${si3.ableit !== '' && si3.ableit != null ? esc(si3.ableit) + ' mA' : '–'}</b> ·
+        Prüfgerät: <b>${esc(si3.geraet) || '–'}</b>
+      </div></div>`;
+    }
+    const mw3 = d.messwerte3 || {};
+    const mw3Ids = Object.keys(mw3).filter(k => String(mw3[k] ?? '').trim() !== '');
+    if(mw3Ids.length){
+      const nm = id => { const e = (CONFIG.messgroessen || []).find(x => x.id === id); return e ? e.name + (e.einheit ? ' [' + e.einheit + ']' : '') : id; };
+      html += `<div class="d-section"><h3>Messwerte nach Instandsetzung</h3><div class="d-checklist">${mw3Ids.map(id => esc(nm(id)) + ': <b>' + esc(mw3[id]) + '</b>').join(' · ')}</div></div>`;
     }
 
     const staffZeilen = Object.keys(staff).map(k=>{
@@ -293,6 +310,10 @@
       if(!s || (!s.mitarbeiter && !s.minuten)) return '';
       return `${k.replace('step','Schritt ')}: ${esc(s.mitarbeiter || '–')} – ${esc(s.minuten || 0)} Min.`;
     }).filter(Boolean);
+    const ze = d.zeitenExtra || {};
+    Object.keys(ze).sort().forEach(step => (ze[step] || []).forEach(z => {
+      staffZeilen.push(`Schritt ${esc(step)} (weitere): ${esc(z.mitarbeiter || '–')} – ${esc(z.minuten || 0)} Min.${z.durchlauf ? ' (' + esc(z.durchlauf) + '. Durchlauf)' : ''}`);
+    }));
     if(staffZeilen.length){
       html += `<div class="d-section"><h3>Mitarbeiter &amp; Arbeitszeit</h3><div class="d-checklist">${staffZeilen.join('<br>')}</div></div>`;
     }
