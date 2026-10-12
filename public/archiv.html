@@ -124,6 +124,7 @@
     ta_fehler_kunde: 'Fehlerbeschreibung (Kunde)',
     ta_komponenten_eingang: 'Mitgelieferte Komponenten',
     ta_defekt_komponenten: 'Defekte Komponenten beim Eingang',
+    ta_abweichung_komponenten: 'Abweichung Vollständigkeit (Endkontrolle)',
     ta_fehler_techniker: 'Fehlerbeschreibung (Techniker)',
     ta_austausch_komponenten: 'Benötigte Austausch-Komponenten',
     fehlerbildRueck: 'Fehlerbild bei erneuter Instandsetzung'
@@ -194,7 +195,8 @@
     let html = '';
     html += `<div class="detail-actions">
       <button class="btn-back" type="button" id="backBtn">← Zurück zur Liste</button>
-      <button class="btn-print" type="button" id="printDetailBtn">Diese Ansicht drucken</button>
+      <button class="btn-print" type="button" id="printDetailBtn">Interne Ansicht drucken</button>
+      <a class="btn-print" style="text-decoration:none;display:inline-block;" href="protokoll.html?archiv=${encodeURIComponent(e.id)}" target="_blank">📄 Kunden-Prüfprotokoll</a>
     </div>`;
     html += `<div class="d-meta">
       <div><label>Kunde</label><span>${esc(e.kunde) || '–'}</span></div>
@@ -202,7 +204,7 @@
       <div><label>Seriennummer</label><span>${esc(e.serien) || '–'}</span></div>
       <div><label>WAWI-Nr.</label><span>${esc(e.wawi) || '–'}</span></div>
       <div><label>Status bei Abschluss</label><span>${esc(e.status) || '–'}</span></div>
-      <div><label>Archiviert am</label><span>${fmtDate(e.archiviertAm)}</span></div>
+      <div><label>Archiviert am</label><span>${fmtDate(e.archiviertAm)}${e.aktualisiertAm ? '<br><small>aktualisiert ' + fmtDate(e.aktualisiertAm) + (Array.isArray(e.versionen) && e.versionen.length ? ' · ' + e.versionen.length + ' frühere Version(en)' : '') + '</small>' : ''}</span></div>
     </div>`;
 
     if(fotos.length){
@@ -287,6 +289,17 @@
     if(d.kvResultHtml){
       html += `<div class="d-section"><h3>Kostenvoranschlag</h3><div class="kv-result">${d.kvResultHtml}</div>${
         state.kvFreigegeben != null ? '<div class="d-checklist">Vom Kunden freigegeben: <b>' + fmtEUR(state.kvFreigegeben) + '</b>' + (state.kvFreigegebenAm ? ' am ' + esc(new Date(state.kvFreigegebenAm).toLocaleDateString('de-DE')) : '') + '</div>' : ''}</div>`;
+    }
+    const vs = d.versand || {};
+    if(state.endkontrolle || state.vollstaendig || vs.datum || vs.art){
+      html += `<div class="d-section"><h3>Endkontrolle &amp; Versand</h3><div class="d-checklist">
+        Endkontrolle: <b>${io(state.endkontrolle)}</b> · Vollständigkeit: <b>${state.vollstaendig === 'ja' ? 'vollständig' : state.vollstaendig === 'nein' ? 'Abweichung' : '–'}</b>
+        ${(texts.ta_abweichung_komponenten || '').trim() ? '<br>Abweichung: ' + esc(texts.ta_abweichung_komponenten) : ''}<br>
+        Versand: <b>${vs.datum ? esc(new Date(vs.datum).toLocaleDateString('de-DE')) : '–'}</b> · ${esc(vs.art) || '–'}
+        ${vs.sendungsnr ? ' · Sendungs-Nr. <b>' + esc(vs.sendungsnr) + '</b>' : ''}
+        ${vs.lieferschein ? ' · Lieferschein <b>' + esc(vs.lieferschein) + '</b>' : ''}
+        ${vs.rechnung ? ' · Rechnung <b>' + esc(vs.rechnung) + '</b>' : ''}
+      </div></div>`;
     }
     const si3 = d.sicherheit3 || {};
     if(state.sicherheit3 || si3.rpe || si3.riso || si3.ableit || si3.geraet){

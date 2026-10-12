@@ -336,6 +336,18 @@
   .zeit-extra .z-add input{width:90px;}
   .zeit-extra .z-add button{border:1px solid var(--navy);background:#fff;color:var(--navy);border-radius:6px;padding:5px 10px;font-size:.8rem;cursor:pointer;}
   .zeit-extra .z-title{color:var(--muted);font-size:.75rem;text-transform:uppercase;letter-spacing:.03em;}
+  /* Update 10/2026: Schritt 4 - Endkontrolle, Vollständigkeit, Versand, Abschluss */
+  .ref-box{background:#f7f9fc;border:1px dashed var(--border);border-radius:8px;padding:8px 12px;margin:2px 0 6px 32px;font-size:.82rem;}
+  .ref-title{color:var(--muted);font-size:.75rem;text-transform:uppercase;letter-spacing:.03em;}
+  .ref-text{white-space:pre-wrap;}
+  .versand{background:#f2f6fb;border:1px solid var(--border);border-radius:9px;padding:12px 14px;margin:8px 0;}
+  .versand .q{font-weight:700;font-size:.9rem;color:var(--navy);margin-bottom:6px;}
+  .abschluss-check{font-size:.82rem;margin-top:10px;padding:10px 12px;border-radius:8px;display:none;}
+  .abschluss-check.offen{display:block;background:#fbf7ee;border:1px solid #ecd9ad;color:#7a5a12;}
+  .abschluss-check.bereit{display:block;background:#eef7f0;border:1px solid #bfe3c8;color:#1f7a48;}
+  .abschluss-check ul{margin:4px 0 0;padding-left:18px;}
+  .toolbar{flex-wrap:wrap;}
+  @media print{ .abschluss-check{display:none!important;} }
 </style>
 </head>
 <body>
@@ -648,9 +660,50 @@
     <div class="card-head"><div class="step-num">4</div><h2>Endkontrolle Halle &amp; Versand</h2></div>
     <div class="card-body">
       <div class="item"><input type="checkbox" id="c4a"><label for="c4a">Sichtkontrolle / Endkontrolle in der Halle</label></div>
+      <div class="result-row">
+        <span class="name">Ergebnis Endkontrolle</span>
+        <div class="toggle-group io" data-group="endkontrolle">
+          <button data-val="ja" type="button">i.O.</button>
+          <button data-val="nein" type="button">n.i.O.</button>
+        </div>
+      </div>
       <div class="item"><input type="checkbox" id="c4b"><label for="c4b">Vollständigkeit Zubehör &amp; Komponenten geprüft</label></div>
+      <div class="ref-box">
+        <div class="ref-title">Beim Eingang erfasst (Schritt 1):</div>
+        <div id="ref_komponenten" class="ref-text">–</div>
+        <div id="ref_defekt_wrap" style="display:none;"><div class="ref-title" style="margin-top:6px;">Defekte Komponenten beim Eingang:</div><div id="ref_defekt" class="ref-text"></div></div>
+      </div>
+      <div class="decision">
+        <div class="q">Alles vollständig, was beim Eingang erfasst wurde?</div>
+        <div class="toggle-group" data-group="vollstaendig">
+          <button data-val="ja" type="button">Ja</button>
+          <button data-val="nein" type="button">Nein</button>
+        </div>
+        <div class="branch" id="branch-vollstaendig-nein">
+          <label style="font-weight:600;" for="ta_abweichung_komponenten">Abweichung (was fehlt / was ist anders – mit Begründung)</label>
+          <textarea rows="2" class="item-full" id="ta_abweichung_komponenten" placeholder="z. B. Koffer beim Kunden verblieben, laut Telefonat vom ..."></textarea>
+        </div>
+      </div>
       <div class="item"><input type="checkbox" id="c4c"><label for="c4c">Verpackt &amp; versandfertig</label></div>
-      <div class="item"><input type="checkbox" id="c4d"><label for="c4d"><strong>Versand durchgeführt</strong></label></div>
+
+      <div class="versand">
+        <div class="q">📦 Versand</div>
+        <div class="freigabe-grid">
+          <div><label for="v_datum">Versanddatum</label><input type="date" id="v_datum" class="v-field"></div>
+          <div><label for="v_art">Versandart</label>
+            <select id="v_art" class="v-field">
+              <option value="">-- auswählen --</option>
+              <option>DHL Paket</option><option>UPS</option><option>DPD</option><option>GLS</option>
+              <option>Spedition</option><option>Kurier</option><option>Abholung durch Kunden</option><option>Sonstige</option>
+            </select></div>
+          <div><label for="v_sendungsnr">Sendungs-/Trackingnummer</label><input type="text" id="v_sendungsnr" class="v-field"></div>
+          <div><label for="v_lieferschein">Lieferschein-Nr.</label><input type="text" id="v_lieferschein" class="v-field"></div>
+          <div><label for="v_rechnung">Rechnungs-Nr.</label><input type="text" id="v_rechnung" class="v-field"></div>
+        </div>
+      </div>
+
+      <div class="item"><input type="checkbox" id="c4d" disabled><label for="c4d"><strong>Versand durchgeführt / Auftrag abgeschlossen</strong> <span style="color:var(--muted);font-weight:400;font-size:.8rem;">(wird über „Auftrag abschließen &amp; archivieren" gesetzt)</span></label></div>
+      <div class="abschluss-check" id="abschlussCheck"></div>
 
       <div class="final-banner ok" id="banner-shipped">✅ Gerät versendet – Auftrag abgeschlossen</div>
 
@@ -661,11 +714,13 @@
     </div>
   </div>
 
-  <p class="note">Mitarbeiter, Fehlerbeschreibungen, Komponenten, Arbeitszeiten sowie Ersatzteil- und Preisangaben werden zentral auf dem Server gespeichert und stehen als Auswahl (Dropdown) allen Nutzern für spätere Aufträge zur Verfügung. Stundenlohn Reparatur: 120&nbsp;€/Std. Der Lagerbestand ist zentral (Menü „Lagerbestand verwalten") und wird hier live angepasst.</p>
+  <p class="note">Mitarbeiter, Fehlerbeschreibungen, Komponenten, Arbeitszeiten sowie Ersatzteil- und Preisangaben werden zentral auf dem Server gespeichert und stehen als Auswahl (Dropdown) allen Nutzern für spätere Aufträge zur Verfügung. Stundensatz Reparatur: <span id="noteSatz">120,00&nbsp;€</span>/Std. netto (änderbar unter Einstellungen). Der Lagerbestand ist zentral (Menü „Lagerbestand verwalten") und wird hier live angepasst.</p>
 
   <div class="toolbar">
     <button class="btn-reset" id="resetBtn" type="button">Auftrag zurücksetzen</button>
-    <button class="btn-print" id="printBtn" type="button">Auftrag abschließen &amp; drucken</button>
+    <button class="btn-reset" id="internPrintBtn" type="button">🖨 Interne Checkliste drucken</button>
+    <button class="btn-reset" id="protokollBtn" type="button">📄 Kunden-Prüfprotokoll</button>
+    <button class="btn-print" id="printBtn" type="button">✔ Auftrag abschließen &amp; archivieren</button>
   </div>
 </div>
 
@@ -710,7 +765,7 @@
   const auftragId = params.get('id');
   if(!auftragId){ location.href = 'index.html'; return; }
 
-  const state = { vorabinfo:null, defekt:null, sichtpruefung:null, sicherheit2:null, funktionstest:null, kvDecision:null, freigabeErhalten:false, sicherheit3:null, testok:null, kvBetrag:0, kvFreigegeben:null, kvFreigegebenAm:null, kvStundensatz:null };
+  const state = { vorabinfo:null, defekt:null, sichtpruefung:null, sicherheit2:null, funktionstest:null, kvDecision:null, freigabeErhalten:false, sicherheit3:null, testok:null, endkontrolle:null, vollstaendig:null, kvBetrag:0, kvFreigegeben:null, kvFreigegebenAm:null, kvStundensatz:null };
   let ewLoops = 0;
   let mitarbeiterListe = [];
   let ersatzteile = [];
@@ -723,7 +778,8 @@
   let CONFIG = { messgroessen: [], fehlerkategorien: [], stundensatz: 120 };
   let sicherheit3 = { rpe:'', riso:'', ableit:'', geraet:'' }; // Prüfung nach Instandsetzung
   let messwerte3 = {};        // Messwerte nach Instandsetzung
-  let zeitenExtra = {};       // { '1': [{mitarbeiter, minuten, datum}], ... } weitere Zeiteinträge je Schritt
+  let zeitenExtra = {};
+  let versand = { datum:'', art:'', sendungsnr:'', lieferschein:'', rechnung:'' };       // { '1': [{mitarbeiter, minuten, datum}], ... } weitere Zeiteinträge je Schritt
   let defektFotos = []; // Fotos der defekten Komponenten beim Eingang (max. 2)
   const DEFEKT_FOTOS_MAX = 2;
   let LAGER_DB = {};
@@ -1493,6 +1549,8 @@
     document.getElementById('branch-kv-nein').classList.toggle('show', state.kvDecision==='nein');
     document.getElementById('branch-testok-ja').classList.toggle('show', state.testok==='ja');
     document.getElementById('branch-testok-nein').classList.toggle('show', state.testok==='nein');
+    document.getElementById('branch-vollstaendig-nein').classList.toggle('show', state.vollstaendig==='nein');
+    zeigeEingangsReferenz();
   }
 
   function currentStatus(){
@@ -1539,6 +1597,7 @@
 
     bannerShipped.classList.toggle('show', document.getElementById('c4d').checked);
     document.getElementById('statusBadge').textContent = currentStatus();
+    updateAbschluss();
   }
 
   function extraMinuten(step){ return (zeitenExtra[step] || []).reduce((s, z) => s + (Number(z.minuten) || 0), 0); }
@@ -1592,7 +1651,7 @@
 
   function updateProgress(){
     const boxes = document.querySelectorAll('.card input[type=checkbox]');
-    const total = boxes.length + 7;
+    const total = boxes.length + 9;
     let done = 0;
     boxes.forEach(b=>{ if(b.checked) done++; });
     if(state.vorabinfo) done++;
@@ -1601,6 +1660,8 @@
     if(state.sicherheit2) done++;
     if(state.funktionstest) done++;
     if(state.sicherheit3) done++;
+    if(state.endkontrolle) done++;
+    if(state.vollstaendig) done++;
     if(state.testok) done++;
     const pct = Math.round((done/total)*100);
     document.getElementById('progressFill').style.width = pct + '%';
@@ -1637,12 +1698,70 @@
     });
   });
 
+  // ---- Schritt 4: Voraussetzungen für den Abschluss ----
+  // Bereits abgeschlossene Altaufträge (Haken "Versand durchgeführt" schon gesetzt) dürfen
+  // jederzeit nachgedruckt/aktualisiert werden, ohne die neuen Pflichtfelder.
+  function abschlussFehlt(){
+    if(document.getElementById('c4d').checked) return [];
+    const f = [];
+    if(state.testok !== 'ja') f.push('Schritt 3: Test insgesamt i.O.');
+    if(state.sicherheit3 !== 'ja') f.push('Schritt 3: Sicherheitsprüfung nach Instandsetzung i.O.');
+    if(!document.getElementById('c4a').checked || state.endkontrolle !== 'ja') f.push('Endkontrolle durchgeführt und i.O.');
+    if(!document.getElementById('c4b').checked) f.push('Vollständigkeit geprüft (Haken)');
+    if(!state.vollstaendig) f.push('Vollständigkeit Ja/Nein beantwortet');
+    if(state.vollstaendig === 'nein' && !(document.getElementById('ta_abweichung_komponenten').value || '').trim()) f.push('Abweichung bei Vollständigkeit beschrieben');
+    if(!document.getElementById('c4c').checked) f.push('Verpackt & versandfertig');
+    if(!versand.datum) f.push('Versanddatum');
+    if(!versand.art) f.push('Versandart');
+    return f;
+  }
+  function updateAbschluss(){
+    const box = document.getElementById('abschlussCheck');
+    const btn = document.getElementById('printBtn');
+    const abgeschlossen = document.getElementById('c4d').checked;
+    btn.textContent = abgeschlossen ? '✔ Archiv aktualisieren (Nachdruck)' : '✔ Auftrag abschließen & archivieren';
+    if(abgeschlossen){ box.className = 'abschluss-check'; box.innerHTML = ''; return; }
+    const f = abschlussFehlt();
+    box.className = 'abschluss-check ' + (f.length ? 'offen' : 'bereit');
+    box.innerHTML = f.length ? '<b>Für den Abschluss fehlt noch:</b><ul>' + f.map(x=>'<li>'+escH(x)+'</li>').join('') + '</ul>' : '<b>✓ Alle Voraussetzungen erfüllt – Auftrag kann abgeschlossen werden.</b>';
+  }
+  function zeigeEingangsReferenz(){
+    const k = (document.getElementById('ta_komponenten_eingang').value || '').trim();
+    document.getElementById('ref_komponenten').textContent = k || '– keine Komponenten erfasst –';
+    const d = (document.getElementById('ta_defekt_komponenten').value || '').trim();
+    document.getElementById('ref_defekt_wrap').style.display = (state.defekt === 'ja' && d) ? '' : 'none';
+    document.getElementById('ref_defekt').textContent = d;
+  }
+  const V_FELDER = { v_datum:'datum', v_art:'art', v_sendungsnr:'sendungsnr', v_lieferschein:'lieferschein', v_rechnung:'rechnung' };
+  function versandAnzeigen(){ Object.entries(V_FELDER).forEach(([id,k])=>{ const el=document.getElementById(id); if(el) el.value = versand[k] || ''; }); }
+  section('Schritt 4 – Versand/Abschluss', ()=>{
+    Object.entries(V_FELDER).forEach(([id,k])=>{
+      ['input','change'].forEach(ev => document.getElementById(id).addEventListener(ev, e=>{ versand[k] = e.target.value; updateAbschluss(); scheduleSave(); }));
+    });
+    ['ta_komponenten_eingang','ta_defekt_komponenten'].forEach(id => document.getElementById(id).addEventListener('input', zeigeEingangsReferenz));
+    document.getElementById('ta_abweichung_komponenten').addEventListener('input', updateAbschluss);
+    document.getElementById('internPrintBtn').addEventListener('click', ()=> window.print());
+    document.getElementById('protokollBtn').addEventListener('click', async ()=>{
+      await saveNow();
+      window.open('protokoll.html?id=' + encodeURIComponent(auftragId), '_blank');
+    });
+  });
+
   section('Drucken-Button', ()=>{
     document.getElementById('printBtn').addEventListener('click', async ()=>{
+      const fehlt = abschlussFehlt();
+      if(fehlt.length){
+        await showModal({ message: 'Auftrag kann noch nicht abgeschlossen werden. Es fehlt: ' + fehlt.join(' · '), cancelText: 'Schließen' });
+        updateAbschluss();
+        return;
+      }
       const serien = document.getElementById('m_serien').value.trim();
-      const meldung = serien
-        ? 'Der Auftrag wird als abgeschlossen markiert, die Checkliste wird unter der Seriennummer "' + serien + '" im Archiv gespeichert und anschließend gedruckt. Fortfahren?'
-        : 'Es ist noch keine Seriennummer erfasst – die Checkliste kann später nicht über die Seriennummer wiedergefunden werden. Trotzdem als abgeschlossen markieren und drucken?';
+      const nachdruck = document.getElementById('c4d').checked;
+      const meldung = nachdruck
+        ? 'Der Archiveintrag dieses Auftrags wird mit dem aktuellen Stand aktualisiert (der vorherige Stand bleibt als Version erhalten). Fortfahren?'
+        : serien
+          ? 'Der Auftrag wird als abgeschlossen markiert und unter der Seriennummer "' + serien + '" im Archiv gespeichert. Fortfahren?'
+          : 'Es ist noch keine Seriennummer erfasst – der Auftrag kann später nicht über die Seriennummer wiedergefunden werden. Trotzdem abschließen?';
       const ok = await showConfirm(meldung);
       if(!ok) return;
 
@@ -1664,22 +1783,38 @@
       } catch(err){
         jsErrors.push('Checkliste im Archiv speichern: ' + (err && err.message ? err.message : err));
         showJsErrors();
+        return;
       }
-
-      window.print();
+      updateAbschluss();
+      const drucken = await showModal({ message: '✓ Auftrag abgeschlossen und im Archiv gespeichert. Kunden-Prüfprotokoll jetzt öffnen?', okText: 'Prüfprotokoll öffnen', cancelText: 'Später' });
+      if(drucken) window.open('protokoll.html?id=' + encodeURIComponent(auftragId), '_blank');
     });
   });
 
   section('Zurücksetzen-Button', ()=>{
     document.getElementById('resetBtn').addEventListener('click', async ()=>{
-      const ok = await showConfirm('Alle Eingaben DIESES Auftrags zurücksetzen? (Mitarbeiterliste, Lagerbestand sowie gemerkte Fehlerbeschreibungen/Komponenten/Arbeitszeiten sind zentral und bleiben erhalten)');
+      const gebuchte = ersatzteile.filter(p => p && p.id && p.gebucht !== false);
+      const ok = await showConfirm('Alle Eingaben DIESES Auftrags zurücksetzen? Der aktuelle Stand wird vorher als Kopie im Papierkorb gesichert (wiederherstellbar).' +
+        (gebuchte.length ? ' ' + gebuchte.length + ' bereits abgebuchte(s) Ersatzteil(e) werden ins Lager zurückgebucht.' : ''));
       if(!ok) return;
+      try {
+        await saveNow();
+        const r = await apiPost('/api/auftraege/' + encodeURIComponent(auftragId) + '/sicherung', { grund: 'Sicherung vor „Auftrag zurücksetzen" (Auftrag ' + auftragId + ')' });
+        if(!r || !r.ok) throw new Error('Sicherung fehlgeschlagen');
+        for(const p of gebuchte){
+          const b = await apiPost('/api/lager/' + encodeURIComponent(p.id) + '/buchung', { delta: Number(p.qty) || 0, auftragId, grund: 'Rückbuchung: Auftrag zurückgesetzt' });
+          if(b && b.id && LAGER_DB[b.id]) LAGER_DB[b.id].bestand = b.bestand;
+        }
+      } catch(err){
+        await showModal({ message: 'Zurücksetzen abgebrochen – die Sicherung konnte nicht angelegt werden (' + (err && err.message ? err.message : err) + '). Es wurde nichts verändert.', cancelText: 'Schließen' });
+        return;
+      }
       document.querySelectorAll('input[type=text]:not(#m_kunde):not(#m_geraet):not(#m_serien):not(#m_wawi), textarea, input[type=number]').forEach(el=>el.value='');
       document.getElementById('m_kunde').value=''; document.getElementById('m_geraet').value=''; document.getElementById('m_serien').value=''; document.getElementById('m_wawi').value='';
       document.querySelectorAll('input[type=checkbox]').forEach(el=>el.checked=false);
       document.querySelectorAll('.toggle-group button, .seg button').forEach(b=>b.classList.remove('active-ja','active-nein','active-ok','active-bad'));
       document.querySelectorAll('.staff-select').forEach(s=>s.value='');
-      state.vorabinfo=null; state.defekt=null; state.sichtpruefung=null; state.sicherheit2=null; state.funktionstest=null; state.kvDecision=null; state.freigabeErhalten=false; state.sicherheit3=null; state.testok=null; state.kvBetrag=0; state.kvFreigegeben=null; state.kvFreigegebenAm=null; state.kvStundensatz=null;
+      state.vorabinfo=null; state.defekt=null; state.sichtpruefung=null; state.sicherheit2=null; state.funktionstest=null; state.kvDecision=null; state.freigabeErhalten=false; state.sicherheit3=null; state.testok=null; state.endkontrolle=null; state.vollstaendig=null; state.kvBetrag=0; state.kvFreigegeben=null; state.kvFreigegebenAm=null; state.kvStundensatz=null;
       testSeg = { schall:null, reset:null };
       ewLoops=0;
       ersatzteile = [];
@@ -1692,6 +1827,7 @@
       freigabe = { datum:'', art:'', von:'', notiz:'' };
       fehlerkategorien = []; messwerte = {};
       sicherheit3 = { rpe:'', riso:'', ableit:'', geraet:'' }; messwerte3 = {}; zeitenExtra = {};
+      versand = { datum:'', art:'', sendungsnr:'', lieferschein:'', rechnung:'' }; versandAnzeigen(); zeigeEingangsReferenz();
       sicherheit3Anzeigen(); renderMesswerte3(); renderZeitenExtra(); zeigeFreigabeBetrag();
       document.getElementById('c2c').disabled = false;
       sicherheitFelderAnzeigen(); renderStruktur();
@@ -1721,14 +1857,14 @@
       staff['step'+inp.dataset.step].minuten = inp.value;
     });
     const texts = {};
-    ['ta_fehler_kunde','ta_komponenten_eingang','ta_defekt_komponenten','ta_fehler_techniker','ta_austausch_komponenten','fehlerbildRueck'].forEach(id=>{
+    ['ta_fehler_kunde','ta_komponenten_eingang','ta_defekt_komponenten','ta_fehler_techniker','ta_austausch_komponenten','fehlerbildRueck','ta_abweichung_komponenten'].forEach(id=>{
       const el = document.getElementById(id);
       if(el) texts[id] = el.value;
     });
     return {
       meta: { datum: document.getElementById('m_datum').value },
       checks, texts, state, ewLoops, staff, ersatzteile, testSeg, fotos, defektFotos,
-      sicherheit, freigabe, fehlerkategorien, messwerte, sicherheit3, messwerte3, zeitenExtra,
+      sicherheit, freigabe, fehlerkategorien, messwerte, sicherheit3, messwerte3, zeitenExtra, versand,
       kvResultHtml: document.getElementById('kvResult').classList.contains('show') ? document.getElementById('kvResult').innerHTML : ''
     };
   }
@@ -1787,6 +1923,7 @@
     if(d.sicherheit3 && typeof d.sicherheit3 === 'object') sicherheit3 = Object.assign({ rpe:'', riso:'', ableit:'', geraet:'' }, d.sicherheit3);
     if(d.messwerte3 && typeof d.messwerte3 === 'object') messwerte3 = d.messwerte3;
     if(d.zeitenExtra && typeof d.zeitenExtra === 'object') zeitenExtra = d.zeitenExtra;
+    if(d.versand && typeof d.versand === 'object') versand = Object.assign({ datum:'', art:'', sendungsnr:'', lieferschein:'', rechnung:'' }, d.versand);
     if(d.staff){
       Object.keys(d.staff).forEach(stepKey=>{
         const step = stepKey.replace('step','');
@@ -1797,7 +1934,7 @@
       });
     }
     // Toggle-Buttons visuell wiederherstellen
-    ['vorabinfo','defekt','sichtpruefung','sicherheit2','funktionstest','kvDecision','sicherheit3','testok'].forEach(group=>{
+    ['vorabinfo','defekt','sichtpruefung','sicherheit2','funktionstest','kvDecision','sicherheit3','testok','endkontrolle','vollstaendig'].forEach(group=>{
       if(state[group]){
         const btn = document.querySelector(`.toggle-group[data-group="${group}"] button[data-val="${state[group]}"]`);
         setToggle(group, state[group], btn);
@@ -1830,6 +1967,8 @@
     renderMesswerte3();
     renderZeitenExtra();
     zeigeFreigabeBetrag();
+    versandAnzeigen();
+    zeigeEingangsReferenz();
   }
 
   // ---- Initialisierung ----
@@ -1864,6 +2003,7 @@
     if(auftrag) section('Gespeicherte Daten anwenden', ()=>applyDaten(auftrag.daten));
     section('Schritt-2-Strukturfelder', ()=>{ sicherheitFelderAnzeigen(); renderStruktur(); updateSicherheit(); });
     section('Schritt-3-Strukturfelder', ()=>{ sicherheit3Anzeigen(); renderMesswerte3(); renderZeitenExtra(); zeigeFreigabeBetrag(); });
+    section('Schritt-4-Felder', ()=>{ versandAnzeigen(); zeigeEingangsReferenz(); document.getElementById('noteSatz').textContent = fmtEUR(stundensatz()); updateAbschluss(); });
     section('Datum/Uhrzeit einfügen', setAktuellesDatumWennLeer);
     section('Anzeige aktualisieren', ()=>{ updateBranches(); updateFlow(); updateProgress(); });
     loaded = true;
