@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lutyrep – Einstellungen</title>
+<style>
+  :root{--navy:#2E4057;--navy-dark:#1c2a3a;--light:#EEF2F7;--border:#D6DEE7;--green:#2f9e63;--red:#c94b4b;--text:#242c35;--muted:#6b7684;}
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;background:#f4f6f9;color:var(--text);padding:24px 16px 60px;}
+  .wrap{max-width:860px;margin:0 auto;}
+  header{background:linear-gradient(135deg,var(--navy),var(--navy-dark));color:#fff;border-radius:14px;padding:20px 26px;margin-bottom:18px;}
+  header h1{margin:0 0 4px;font-size:1.3rem;}
+  a.back{color:#cbd6e2;font-size:.82rem;text-decoration:none;}
+  .box{background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:18px;}
+  .box h2{margin:0 0 6px;font-size:1rem;color:var(--navy);}
+  .box p{font-size:.82rem;color:var(--muted);margin:4px 0 10px;}
+  table{width:100%;border-collapse:collapse;}
+  th{text-align:left;font-size:.72rem;text-transform:uppercase;color:var(--muted);padding:6px 8px;border-bottom:1px solid var(--border);}
+  td{padding:7px 8px;font-size:.88rem;border-bottom:1px solid #eef1f5;}
+  tr.inaktiv td{color:#aab3bd;}
+  td.id{font-size:.75rem;color:var(--muted);width:60px;}
+  .toggle{border:1px solid var(--border);background:#fff;border-radius:6px;padding:4px 10px;font-size:.78rem;cursor:pointer;}
+  .addRow{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+  .addRow input{border:1px solid var(--border);border-radius:7px;padding:7px 9px;font-size:.87rem;font-family:inherit;}
+  .addRow input.name{flex:1;min-width:180px;}
+  .addRow input.einheit{width:110px;}
+  .addRow button{border:none;background:var(--navy);color:#fff;border-radius:7px;padding:7px 14px;font-size:.85rem;font-weight:600;cursor:pointer;}
+  .msg{font-size:.8rem;margin-top:6px;min-height:1em;}
+  .msg.err{color:var(--red);}
+  .empty{color:var(--muted);font-size:.85rem;padding:10px 8px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="back" href="index.html">← zur Übersicht</a>
+    <h1>⚙️ Einstellungen – Fehlerkategorien &amp; Messgrößen</h1>
+  </header>
+
+  <div class="box">
+    <h2>Fehlerkategorien</h2>
+    <p>Erscheinen in Schritt 2 als Auswahl (Mehrfachauswahl möglich). Grundlage für spätere Auswertungen und Fehlerbild-Erkennung. Einträge werden nie gelöscht, nur deaktiviert – alte Aufträge behalten so ihre Zuordnung.</p>
+    <table><thead><tr><th>ID</th><th>Bezeichnung</th><th>Status</th><th></th></tr></thead><tbody id="kat"></tbody></table>
+    <div class="addRow">
+      <input class="name" id="katName" placeholder="Neue Kategorie, z. B. Generator / Leistungsteil">
+      <button type="button" id="katAdd">+ Hinzufügen</button>
+    </div>
+    <div class="msg" id="katMsg"></div>
+  </div>
+
+  <div class="box">
+    <h2>Messgrößen</h2>
+    <p>Erscheinen in Schritt 2 als Eingabefelder (Zahl). Mit Einheit anlegen, z. B. „Resonanzfrequenz" in kHz. Deaktivierte Messgrößen werden bei neuen Aufträgen nicht mehr angezeigt, bereits erfasste Werte bleiben erhalten.</p>
+    <table><thead><tr><th>ID</th><th>Bezeichnung</th><th>Einheit</th><th>Status</th><th></th></tr></thead><tbody id="mg"></tbody></table>
+    <div class="addRow">
+      <input class="name" id="mgName" placeholder="Neue Messgröße, z. B. Resonanzfrequenz">
+      <input class="einheit" id="mgEinheit" placeholder="Einheit, z. B. kHz">
+      <button type="button" id="mgAdd">+ Hinzufügen</button>
+    </div>
+    <div class="msg" id="mgMsg"></div>
+  </div>
+</div>
+<script>
+function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+async function load(){
+  const cfg = await (await fetch('/api/config')).json();
+  const kat = document.getElementById('kat');
+  kat.innerHTML = cfg.fehlerkategorien.length ? cfg.fehlerkategorien.map(k => `
+    <tr class="${k.aktiv === false ? 'inaktiv' : ''}"><td class="id">${esc(k.id)}</td><td>${esc(k.name)}</td>
+    <td>${k.aktiv === false ? 'deaktiviert' : 'aktiv'}</td>
+    <td><button class="toggle" type="button" data-liste="fehlerkategorien" data-id="${esc(k.id)}" data-aktiv="${k.aktiv === false ? '1' : '0'}">${k.aktiv === false ? 'aktivieren' : 'deaktivieren'}</button></td></tr>`).join('')
+    : '<tr><td colspan="4" class="empty">Noch keine Fehlerkategorien angelegt.</td></tr>';
+  const mg = document.getElementById('mg');
+  mg.innerHTML = cfg.messgroessen.length ? cfg.messgroessen.map(m => `
+    <tr class="${m.aktiv === false ? 'inaktiv' : ''}"><td class="id">${esc(m.id)}</td><td>${esc(m.name)}</td><td>${esc(m.einheit) || '–'}</td>
+    <td>${m.aktiv === false ? 'deaktiviert' : 'aktiv'}</td>
+    <td><button class="toggle" type="button" data-liste="messgroessen" data-id="${esc(m.id)}" data-aktiv="${m.aktiv === false ? '1' : '0'}">${m.aktiv === false ? 'aktivieren' : 'deaktivieren'}</button></td></tr>`).join('')
+    : '<tr><td colspan="5" class="empty">Noch keine Messgrößen angelegt.</td></tr>';
+  document.querySelectorAll('button.toggle').forEach(b => b.addEventListener('click', async ()=>{
+    await fetch('/api/config/' + b.dataset.liste + '/' + encodeURIComponent(b.dataset.id), { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ aktiv: b.dataset.aktiv === '1' }) });
+    load();
+  }));
+}
+
+async function add(liste, nameId, einheitId, msgId){
+  const name = document.getElementById(nameId).value.trim();
+  const msg = document.getElementById(msgId);
+  msg.textContent = ''; msg.className = 'msg';
+  if(!name) return;
+  const body = { name };
+  if(einheitId) body.einheit = document.getElementById(einheitId).value.trim();
+  const res = await fetch('/api/config/' + liste, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  if(!res.ok){ msg.textContent = 'Nicht angelegt – Eintrag existiert bereits oder ist leer.'; msg.className = 'msg err'; return; }
+  document.getElementById(nameId).value = '';
+  if(einheitId) document.getElementById(einheitId).value = '';
+  load();
+}
+document.getElementById('katAdd').addEventListener('click', ()=>add('fehlerkategorien','katName',null,'katMsg'));
+document.getElementById('mgAdd').addEventListener('click', ()=>add('messgroessen','mgName','mgEinheit','mgMsg'));
+['katName','mgName','mgEinheit'].forEach(id => document.getElementById(id).addEventListener('keydown', e=>{
+  if(e.key === 'Enter'){ e.preventDefault(); document.getElementById(id === 'katName' ? 'katAdd' : 'mgAdd').click(); }
+}));
+load();
+</script>
+</body>
+</html>

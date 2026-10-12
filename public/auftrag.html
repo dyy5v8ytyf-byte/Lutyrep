@@ -291,6 +291,37 @@
     .toggle-group button, .seg button{font-size:.85rem;}
     .parts-list .row{flex-wrap:wrap;gap:4px 10px;}
   }
+  /* Update 10/2026: Defekte Komponenten beim Eingang */
+  .defekt-hint{display:none;font-size:.8rem;color:#a13a3a;margin-top:4px;}
+  .defekt-hint.show{display:block;}
+  /* Update 10/2026: Schritt 2 - Sicherheitsprüfung, Ergebnisse, Freigabe-Nachweis, Kategorien/Messwerte */
+  .result-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:4px 0 8px 32px;}
+  .result-row .name{font-size:.85rem;color:var(--muted);min-width:150px;}
+  .toggle-group.io button{padding:5px 14px;font-size:.8rem;}
+  .safety{background:#fff6f0;border:1px solid #f0c9a8;border-radius:9px;padding:12px 14px;margin:8px 0;}
+  .safety .q{font-weight:700;font-size:.9rem;color:#8a3d0f;margin-bottom:4px;}
+  .safety-note{font-size:.78rem;color:var(--muted);margin-bottom:8px;}
+  .safety-grid,.freigabe-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;}
+  .safety-grid label,.freigabe-grid label,.mess-grid label{display:block;font-size:.75rem;color:var(--muted);margin-bottom:3px;}
+  .safety-grid input,.safety-grid select,.freigabe-grid input,.freigabe-grid select,.mess-grid input{width:100%;border:1px solid var(--border);border-radius:7px;padding:7px 9px;font-size:.88rem;font-family:inherit;background:#fff;}
+  .safety .result-row{padding-left:0;}
+  .final-banner.danger{background:#fdeeee;border:1px solid #f0b8b8;color:#a13a3a;}
+  #banner-sicherheit-nio{display:none;margin-top:8px;}
+  #banner-sicherheit-nio.show{display:block;}
+  .safety-missing{display:none;font-size:.8rem;color:#8a5c0f;margin-top:6px;}
+  .safety-missing.show{display:block;}
+  .item input[type=checkbox]:disabled + label{color:#aab3bd;cursor:not-allowed;}
+  .freigabe-grid{margin-top:10px;}
+  .freigabe-missing{font-size:.8rem;color:#a13a3a;margin-top:6px;}
+  .struct-block{background:#f7f9fc;border:1px dashed var(--border);border-radius:9px;padding:12px 14px;margin:8px 0;}
+  .struct-title{font-weight:700;font-size:.85rem;color:var(--navy);margin-bottom:6px;}
+  .struct-sub{font-weight:400;color:var(--muted);font-size:.75rem;}
+  .struct-empty{font-size:.8rem;color:var(--muted);}
+  .struct-empty a{color:var(--navy);}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;}
+  .chip{border:1px solid var(--border);background:#fff;border-radius:16px;padding:5px 12px;font-size:.8rem;cursor:pointer;font-family:inherit;}
+  .chip.on{background:var(--navy);color:#fff;border-color:var(--navy);}
+  .mess-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;}
 </style>
 </head>
 <body>
@@ -361,6 +392,24 @@
           <textarea rows="2" id="ta_komponenten_eingang" placeholder="Mitgelieferte Komponenten (Kabel, Schallkopf, Sonotroden, Al-Koffer, sonstiges...)"></textarea>
         </div>
       </div>
+      <div class="decision">
+        <div class="q">Defekte Komponenten?</div>
+        <div class="toggle-group" data-group="defekt">
+          <button data-val="ja" type="button">Ja</button>
+          <button data-val="nein" type="button">Nein</button>
+        </div>
+        <div class="branch" id="branch-defekt-ja">
+          <label style="font-weight:600;" for="ta_defekt_komponenten">Beschreibung der defekten Komponenten</label>
+          <textarea rows="2" class="item-full" id="ta_defekt_komponenten" placeholder="Welche Komponente, welcher Schaden (z. B. HF-Kabel Stecker abgerissen, Koffer Scharnier gebrochen)..."></textarea>
+          <div class="defekt-hint" id="defektHint">Bitte die defekten Komponenten kurz beschreiben.</div>
+          <div class="photo-upload-row" style="margin-top:8px;">
+            <input type="file" id="defektFotoInput" accept="image/*" multiple style="display:none;">
+            <label class="btn-photo" id="defektFotoAddBtn" for="defektFotoInput">📷 Foto Defekt hinzufügen</label>
+            <span class="photo-hint" id="defektFotoHint">0 / 2 Fotos</span>
+          </div>
+          <div class="photo-thumbs" id="defektFotoThumbs"></div>
+        </div>
+      </div>
       <div class="item">
         <input type="checkbox" id="c1c"><label for="c1c">c) Seriennummer, WAWI-Nr. und Komponenten erfasst (siehe Kopfdaten oben)</label>
       </div>
@@ -381,13 +430,64 @@
     <div class="card-body">
       <div class="item"><input type="checkbox" id="c2a"><label for="c2a">Gerät säubern</label></div>
       <div class="item"><input type="checkbox" id="c2b"><label for="c2b">Sichtprüfung</label></div>
+      <div class="result-row">
+        <span class="name">Ergebnis Sichtprüfung</span>
+        <div class="toggle-group io" data-group="sichtpruefung">
+          <button data-val="ja" type="button">i.O.</button>
+          <button data-val="nein" type="button">n.i.O.</button>
+        </div>
+      </div>
+
+      <!-- Sicherheitsprüfung vor Inbetriebnahme (S2-1) -->
+      <div class="safety">
+        <div class="q">⚡ Elektrische Sicherheitsprüfung vor Inbetriebnahme</div>
+        <div class="safety-note">Vor dem ersten Betrieb unter Spannung messen. Grenzwerte je nach Schutzklasse/Gerät gemäß Vorgabe der verantwortlichen Elektrofachkraft.</div>
+        <div class="safety-grid">
+          <div><label for="si_schutzklasse">Schutzklasse</label>
+            <select id="si_schutzklasse" class="si-field">
+              <option value="">-- auswählen --</option>
+              <option value="I">SK I (Schutzleiter)</option>
+              <option value="II">SK II (schutzisoliert)</option>
+              <option value="III">SK III (Schutzkleinspannung)</option>
+            </select></div>
+          <div id="si_rpe_wrap"><label for="si_rpe">Schutzleiterwiderstand R<sub>PE</sub> [Ω]</label><input type="number" step="0.001" min="0" id="si_rpe" class="si-field" placeholder="z. B. 0,08"></div>
+          <div><label for="si_riso">Isolationswiderstand R<sub>ISO</sub> [MΩ]</label><input type="number" step="0.01" min="0" id="si_riso" class="si-field" placeholder="z. B. 50"></div>
+          <div><label for="si_geraet">Prüfgerät</label><input type="text" id="si_geraet" class="si-field" placeholder="Typ / Inventar-Nr."></div>
+        </div>
+        <div class="result-row" style="margin-top:8px;">
+          <span class="name"><b>Sicherheitsprüfung bestanden?</b></span>
+          <div class="toggle-group io" data-group="sicherheit2">
+            <button data-val="ja" type="button">i.O.</button>
+            <button data-val="nein" type="button">n.i.O.</button>
+          </div>
+        </div>
+        <div class="final-banner danger" id="banner-sicherheit-nio">⛔ Sicherheitsprüfung nicht bestanden – Gerät NICHT unter Spannung in Betrieb nehmen. Befund unten in der Fehlerbeschreibung festhalten.</div>
+        <div class="safety-missing" id="sicherheitHint">Funktionstest unter Spannung ist erst nach bestandener Sicherheitsprüfung (i.O.) freigegeben.</div>
+      </div>
+
       <div class="item"><input type="checkbox" id="c2c"><label for="c2c">Funktionstest unter Spannung</label></div>
+      <div class="result-row">
+        <span class="name">Ergebnis Funktionstest</span>
+        <div class="toggle-group io" data-group="funktionstest">
+          <button data-val="ja" type="button">i.O.</button>
+          <button data-val="nein" type="button">n.i.O.</button>
+        </div>
+      </div>
       <div class="item">
         <input type="checkbox" id="c2d">
         <div class="item-full">
           <label for="c2d">Bericht / Checkliste – Fehlerbeschreibung (Techniker)</label>
           <textarea rows="2" id="ta_fehler_techniker" placeholder="Festgestellte Fehler / Befund..."></textarea>
         </div>
+      </div>
+
+      <!-- Vorbereitet für Fehlerbild-/Mustererkennung (S2-3 / S2-4): Listen werden unter
+           "Einstellungen" gepflegt - solange sie leer sind, erscheint nur ein Hinweis. -->
+      <div class="struct-block">
+        <div class="struct-title">Fehlerkategorie <span class="struct-sub">(Mehrfachauswahl)</span></div>
+        <div class="chips" id="fehlerKatChips"></div>
+        <div class="struct-title" style="margin-top:12px;">Messwerte</div>
+        <div class="mess-grid" id="messwerteGrid"></div>
       </div>
 
       <div class="decision">
@@ -402,6 +502,16 @@
         <div class="branch" id="branch-kv-ja">
           Freigabe Kunde wie gehabt: Weiter zu Schritt 3, dort wird der KV aus Fehlerbild, Ersatzteilen und Arbeitszeit erstellt.
           <div class="kv-amount">KV-Betrag: <b id="kvBetragAnzeige">– noch nicht erstellt –</b></div>
+          <div class="freigabe-grid">
+            <div><label for="fg_datum">Freigabe am</label><input type="date" id="fg_datum" class="fg-field"></div>
+            <div><label for="fg_art">Art der Freigabe</label>
+              <select id="fg_art" class="fg-field">
+                <option value="">-- auswählen --</option>
+                <option>E-Mail</option><option>schriftlich / Fax</option><option>Telefon</option><option>persönlich</option>
+              </select></div>
+            <div><label for="fg_von">Entgegengenommen von</label><select id="fg_von" class="fg-field staff-like"><option value="">-- auswählen --</option></select></div>
+            <div><label for="fg_notiz">Ansprechpartner / Notiz</label><input type="text" id="fg_notiz" class="fg-field" placeholder="z. B. Hr. Meier, Mail vom ..."></div>
+          </div>
           <div class="kv-gate" style="margin-top:10px;">
             <input type="checkbox" id="freigabeErhalten">
             <label for="freigabeErhalten">Freigabe des Kunden erhalten → schaltet endgültige Instandsetzung frei</label>
@@ -560,12 +670,19 @@
   const auftragId = params.get('id');
   if(!auftragId){ location.href = 'index.html'; return; }
 
-  const state = { vorabinfo:null, kvDecision:null, freigabeErhalten:false, testok:null, kvBetrag:0 };
+  const state = { vorabinfo:null, defekt:null, sichtpruefung:null, sicherheit2:null, funktionstest:null, kvDecision:null, freigabeErhalten:false, testok:null, kvBetrag:0 };
   let ewLoops = 0;
   let mitarbeiterListe = [];
   let ersatzteile = [];
   let fotos = []; // Wareneingang-Fotos, als komprimierte Base64-Bilder (max. 3)
   const FOTOS_MAX = 3;
+  let sicherheit = { schutzklasse:'', rpe:'', riso:'', geraet:'' }; // Messwerte Sicherheitsprüfung Schritt 2
+  let freigabe = { datum:'', art:'', von:'', notiz:'' };              // Nachweis Kundenfreigabe
+  let fehlerkategorien = [];  // gewählte Kategorie-IDs (Liste aus Einstellungen)
+  let messwerte = {};         // { messgroessenId: Wert }
+  let CONFIG = { messgroessen: [], fehlerkategorien: [] };
+  let defektFotos = []; // Fotos der defekten Komponenten beim Eingang (max. 2)
+  const DEFEKT_FOTOS_MAX = 2;
   let LAGER_DB = {};
   let MEMORY = { fehler_kunde: [], fehler_techniker: [], fehlerbild_ruecklauf: [], komponenten_eingang: [], austausch_komponenten: [], arbeitszeiten: [] };
   let testSeg = { schall:null, reset:null };
@@ -730,12 +847,19 @@
     const selects = document.querySelectorAll('.staff-select');
     selects.forEach(sel=>{
       const current = sel.value;
-      sel.innerHTML = '<option value="">-- auswählen --</option>' + mitarbeiterListe.map(n=>`<option value="${n}">${n}</option>`).join('');
+      sel.innerHTML = '<option value="">-- auswählen --</option>' + mitarbeiterListe.map(n=>`<option value="${escH(n)}">${escH(n)}</option>`).join('');
       if(mitarbeiterListe.includes(current)) sel.value = current;
     });
+    const fgVon = document.getElementById('fg_von');
+    if(fgVon){
+      const cur = freigabe.von || fgVon.value;
+      fgVon.innerHTML = '<option value="">-- auswählen --</option>' + mitarbeiterListe.map(n=>`<option value="${escH(n)}">${escH(n)}</option>`).join('');
+      if(cur && !mitarbeiterListe.includes(cur)) fgVon.insertAdjacentHTML('beforeend', `<option value="${escH(cur)}">${escH(cur)}</option>`);
+      fgVon.value = cur || '';
+    }
     const listEl = document.getElementById('rosterList');
     listEl.innerHTML = mitarbeiterListe.length
-      ? mitarbeiterListe.map(n=>`<span>${n}</span>`).join('')
+      ? mitarbeiterListe.map(n=>`<span>${escH(n)}</span>`).join('')
       : 'Noch keine Mitarbeiter erfasst – oben eintragen, danach in jedem Schritt auswählbar.';
   }
 
@@ -827,6 +951,55 @@
       renderFotos();
       scheduleSave();
     });
+  });
+
+  // ---- Fotos defekter Komponenten (Schritt 1, nur bei "Defekte Komponenten? Ja", max. 2) ----
+  function renderDefektFotos(){
+    const wrap = document.getElementById('defektFotoThumbs');
+    const hint = document.getElementById('defektFotoHint');
+    const addBtn = document.getElementById('defektFotoAddBtn');
+    if(!wrap) return;
+    wrap.innerHTML = defektFotos.map((src, i) =>
+      `<div class="photo-thumb"><img src="${src}" alt="Defekt-Foto ${i+1}"><button type="button" class="photo-remove" data-i="${i}">×</button></div>`
+    ).join('');
+    wrap.querySelectorAll('.photo-remove').forEach(b=>{
+      b.addEventListener('click', ()=>{
+        defektFotos.splice(Number(b.dataset.i), 1);
+        renderDefektFotos();
+        scheduleSave();
+      });
+    });
+    if(hint) hint.textContent = defektFotos.length + ' / ' + DEFEKT_FOTOS_MAX + ' Fotos';
+    if(addBtn) addBtn.classList.toggle('is-disabled', defektFotos.length >= DEFEKT_FOTOS_MAX);
+  }
+  function updateDefektHint(){
+    const ta = document.getElementById('ta_defekt_komponenten');
+    const h = document.getElementById('defektHint');
+    if(h && ta) h.classList.toggle('show', state.defekt === 'ja' && !ta.value.trim());
+  }
+
+  section('Defekt-Fotos', ()=>{
+    document.getElementById('defektFotoInput').addEventListener('change', async (e)=>{
+      const files = Array.from(e.target.files || []);
+      e.target.value = '';
+      if(!files.length) return;
+      const platzFrei = DEFEKT_FOTOS_MAX - defektFotos.length;
+      if(platzFrei <= 0){
+        await showModal({ message: 'Es sind bereits ' + DEFEKT_FOTOS_MAX + ' Fotos der defekten Komponenten hinzugefügt. Bitte zuerst ein Foto entfernen.' });
+        return;
+      }
+      const zuVerarbeiten = files.slice(0, platzFrei);
+      if(files.length > platzFrei){
+        await showModal({ message: 'Es sind maximal ' + DEFEKT_FOTOS_MAX + ' Fotos der defekten Komponenten erlaubt. Nur die ersten ' + zuVerarbeiten.length + ' werden übernommen.' });
+      }
+      for(const file of zuVerarbeiten){
+        try { defektFotos.push(await komprimiereBild(file)); }
+        catch(err){ jsErrors.push('Defekt-Foto verarbeiten: ' + (err && err.message ? err.message : err)); showJsErrors(); }
+      }
+      renderDefektFotos();
+      scheduleSave();
+    });
+    document.getElementById('ta_defekt_komponenten').addEventListener('input', updateDefektHint);
   });
 
   // ---- Ersatzteile / Lagerabgleich (zentral) ----
@@ -1005,11 +1178,75 @@
   });
 
   section('Freigabe-Checkbox', ()=>{
-    document.getElementById('freigabeErhalten').addEventListener('change', (e)=>{
+    document.getElementById('freigabeErhalten').addEventListener('change', async (e)=>{
+      // Freigabe nur für einen tatsächlich erstellten Kostenvoranschlag (KV-Betrag vorhanden)
+      if(e.target.checked && !(Number(state.kvBetrag) > 0)){
+        e.target.checked = false;
+        await showModal({ message: 'Die Kundenfreigabe kann erst gesetzt werden, wenn der Kostenvoranschlag erstellt ist (Schritt 3, „Kostenvoranschlag erstellen").' });
+        return;
+      }
+      // Nachweis: Datum und Art der Freigabe müssen vor dem Freischalten eingetragen sein
+      if(e.target.checked && (!freigabe.datum || !freigabe.art)){
+        e.target.checked = false;
+        await showModal({ message: 'Bitte zuerst Datum und Art der Kundenfreigabe eintragen (Nachweis).' });
+        return;
+      }
       state.freigabeErhalten = e.target.checked;
       updateFlow();
       updateProgress();
       scheduleSave();
+    });
+  });
+
+  // ---- Schritt 2: Sicherheitsprüfung, Freigabe-Nachweis, Fehlerkategorie, Messwerte ----
+  function escH(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  const SI_FELDER = { si_schutzklasse:'schutzklasse', si_rpe:'rpe', si_riso:'riso', si_geraet:'geraet' };
+  const FG_FELDER = { fg_datum:'datum', fg_art:'art', fg_von:'von', fg_notiz:'notiz' };
+  function sicherheitFelderAnzeigen(){
+    Object.entries(SI_FELDER).forEach(([id,k])=>{ const el=document.getElementById(id); if(el) el.value = sicherheit[k] || ''; });
+    Object.entries(FG_FELDER).forEach(([id,k])=>{ const el=document.getElementById(id); if(el) el.value = freigabe[k] || ''; });
+    // R_PE nur bei Schutzklasse I relevant
+    document.getElementById('si_rpe_wrap').style.display = (sicherheit.schutzklasse === 'II' || sicherheit.schutzklasse === 'III') ? 'none' : '';
+  }
+  // Funktionstest unter Spannung erst nach bestandener Sicherheitsprüfung. Bereits früher
+  // gesetzte Haken (Altaufträge vor diesem Update) bleiben unangetastet.
+  function updateSicherheit(){
+    const c2c = document.getElementById('c2c');
+    const ok = state.sicherheit2 === 'ja';
+    c2c.disabled = !ok && !c2c.checked;
+    document.getElementById('banner-sicherheit-nio').classList.toggle('show', state.sicherheit2 === 'nein');
+    document.getElementById('sicherheitHint').classList.toggle('show', !ok && !c2c.checked && state.sicherheit2 !== 'nein');
+  }
+  function renderStruktur(){
+    const chipWrap = document.getElementById('fehlerKatChips');
+    const kats = CONFIG.fehlerkategorien.filter(k => k.aktiv !== false || fehlerkategorien.includes(k.id));
+    chipWrap.innerHTML = kats.length
+      ? kats.map(k => `<button type="button" class="chip ${fehlerkategorien.includes(k.id) ? 'on' : ''}" data-kat="${escH(k.id)}">${escH(k.name)}</button>`).join('')
+      : '<div class="struct-empty">Noch keine Fehlerkategorien festgelegt – unter <a href="einstellungen.html">Einstellungen</a> anlegen.</div>';
+    chipWrap.querySelectorAll('.chip').forEach(c => c.addEventListener('click', ()=>{
+      const id = c.dataset.kat;
+      fehlerkategorien = fehlerkategorien.includes(id) ? fehlerkategorien.filter(x => x !== id) : fehlerkategorien.concat(id);
+      c.classList.toggle('on');
+      scheduleSave();
+    }));
+    const grid = document.getElementById('messwerteGrid');
+    const mg = CONFIG.messgroessen.filter(m => m.aktiv !== false || (messwerte[m.id] !== undefined && messwerte[m.id] !== ''));
+    grid.innerHTML = mg.length
+      ? mg.map(m => `<div><label for="mw_${escH(m.id)}">${escH(m.name)}${m.einheit ? ' [' + escH(m.einheit) + ']' : ''}</label><input type="number" step="any" id="mw_${escH(m.id)}" data-mw="${escH(m.id)}" value="${escH(messwerte[m.id] ?? '')}"></div>`).join('')
+      : '<div class="struct-empty">Noch keine Messgrößen festgelegt – unter <a href="einstellungen.html">Einstellungen</a> anlegen (z. B. Resonanzfrequenz, Impedanz, Leistung).</div>';
+    grid.querySelectorAll('input[data-mw]').forEach(inp => inp.addEventListener('input', ()=>{
+      messwerte[inp.dataset.mw] = inp.value;
+      scheduleSave();
+    }));
+  }
+  section('Schritt 2 – Sicherheitsprüfung/Freigabe-Nachweis', ()=>{
+    document.getElementById('c2c').addEventListener('change', updateSicherheit);
+    Object.entries(SI_FELDER).forEach(([id,k])=>{
+      document.getElementById(id).addEventListener('input', e=>{ sicherheit[k] = e.target.value; if(k==='schutzklasse') sicherheitFelderAnzeigen(); scheduleSave(); });
+      document.getElementById(id).addEventListener('change', e=>{ sicherheit[k] = e.target.value; if(k==='schutzklasse') sicherheitFelderAnzeigen(); scheduleSave(); });
+    });
+    Object.entries(FG_FELDER).forEach(([id,k])=>{
+      ['input','change'].forEach(ev => document.getElementById(id).addEventListener(ev, e=>{ freigabe[k] = e.target.value; scheduleSave(); }));
     });
   });
 
@@ -1087,6 +1324,9 @@
 
   function updateBranches(){
     document.getElementById('branch-vorabinfo-ja').classList.toggle('show', state.vorabinfo==='ja');
+    document.getElementById('branch-defekt-ja').classList.toggle('show', state.defekt==='ja');
+    updateSicherheit();
+    updateDefektHint();
     document.getElementById('branch-kv-ja').classList.toggle('show', state.kvDecision==='ja');
     document.getElementById('branch-kv-nein').classList.toggle('show', state.kvDecision==='nein');
     document.getElementById('branch-testok-ja').classList.toggle('show', state.testok==='ja');
@@ -1103,6 +1343,7 @@
       if(phaseBOpen && state.kvDecision) status = 'In endgültiger Instandsetzung';
       else if(state.kvDecision === 'ja') status = 'Wartet auf Kundenfreigabe (KV)';
       else if(state.kvDecision === 'nein') status = 'In Diagnose (E-Werkstatt)';
+      else if(state.sicherheit2 === 'nein') status = 'Sicherheitsprüfung n.i.O.';
       else if(document.getElementById('c2d').checked || document.getElementById('c2a').checked) status = 'In Werkstattprüfung';
       else if(document.getElementById('c1d').checked) status = 'In Werkstattprüfung';
     }
@@ -1146,10 +1387,14 @@
 
   function updateProgress(){
     const boxes = document.querySelectorAll('.card input[type=checkbox]');
-    const total = boxes.length + 2;
+    const total = boxes.length + 6;
     let done = 0;
     boxes.forEach(b=>{ if(b.checked) done++; });
     if(state.vorabinfo) done++;
+    if(state.defekt) done++;
+    if(state.sichtpruefung) done++;
+    if(state.sicherheit2) done++;
+    if(state.funktionstest) done++;
     if(state.testok) done++;
     const pct = Math.round((done/total)*100);
     document.getElementById('progressFill').style.width = pct + '%';
@@ -1223,13 +1468,20 @@
       document.querySelectorAll('input[type=checkbox]').forEach(el=>el.checked=false);
       document.querySelectorAll('.toggle-group button, .seg button').forEach(b=>b.classList.remove('active-ja','active-nein','active-ok','active-bad'));
       document.querySelectorAll('.staff-select').forEach(s=>s.value='');
-      state.vorabinfo=null; state.kvDecision=null; state.freigabeErhalten=false; state.testok=null; state.kvBetrag=0;
+      state.vorabinfo=null; state.defekt=null; state.sichtpruefung=null; state.sicherheit2=null; state.funktionstest=null; state.kvDecision=null; state.freigabeErhalten=false; state.testok=null; state.kvBetrag=0;
       testSeg = { schall:null, reset:null };
       ewLoops=0;
       ersatzteile = [];
       renderParts();
       fotos = [];
       renderFotos();
+      defektFotos = [];
+      renderDefektFotos();
+      sicherheit = { schutzklasse:'', rpe:'', riso:'', geraet:'' };
+      freigabe = { datum:'', art:'', von:'', notiz:'' };
+      fehlerkategorien = []; messwerte = {};
+      document.getElementById('c2c').disabled = false;
+      sicherheitFelderAnzeigen(); renderStruktur();
       document.getElementById('kvResult').classList.remove('show');
       document.getElementById('kvBetragAnzeige').textContent = '– noch nicht erstellt –';
       document.getElementById('ewLoopBadge').textContent='';
@@ -1256,13 +1508,14 @@
       staff['step'+inp.dataset.step].minuten = inp.value;
     });
     const texts = {};
-    ['ta_fehler_kunde','ta_komponenten_eingang','ta_fehler_techniker','ta_austausch_komponenten','fehlerbildRueck'].forEach(id=>{
+    ['ta_fehler_kunde','ta_komponenten_eingang','ta_defekt_komponenten','ta_fehler_techniker','ta_austausch_komponenten','fehlerbildRueck'].forEach(id=>{
       const el = document.getElementById(id);
       if(el) texts[id] = el.value;
     });
     return {
       meta: { datum: document.getElementById('m_datum').value },
-      checks, texts, state, ewLoops, staff, ersatzteile, testSeg, fotos,
+      checks, texts, state, ewLoops, staff, ersatzteile, testSeg, fotos, defektFotos,
+      sicherheit, freigabe, fehlerkategorien, messwerte,
       kvResultHtml: document.getElementById('kvResult').classList.contains('show') ? document.getElementById('kvResult').innerHTML : ''
     };
   }
@@ -1310,6 +1563,11 @@
     if(d.ersatzteile) ersatzteile = d.ersatzteile;
     if(d.testSeg) testSeg = d.testSeg;
     if(Array.isArray(d.fotos)) fotos = d.fotos;
+    if(Array.isArray(d.defektFotos)) defektFotos = d.defektFotos;
+    if(d.sicherheit && typeof d.sicherheit === 'object') sicherheit = Object.assign({ schutzklasse:'', rpe:'', riso:'', geraet:'' }, d.sicherheit);
+    if(d.freigabe && typeof d.freigabe === 'object') freigabe = Object.assign({ datum:'', art:'', von:'', notiz:'' }, d.freigabe);
+    if(Array.isArray(d.fehlerkategorien)) fehlerkategorien = d.fehlerkategorien;
+    if(d.messwerte && typeof d.messwerte === 'object') messwerte = d.messwerte;
     if(d.staff){
       Object.keys(d.staff).forEach(stepKey=>{
         const step = stepKey.replace('step','');
@@ -1320,7 +1578,7 @@
       });
     }
     // Toggle-Buttons visuell wiederherstellen
-    ['vorabinfo','kvDecision','testok'].forEach(group=>{
+    ['vorabinfo','defekt','sichtpruefung','sicherheit2','funktionstest','kvDecision','testok'].forEach(group=>{
       if(state[group]){
         const btn = document.querySelector(`.toggle-group[data-group="${group}"] button[data-val="${state[group]}"]`);
         setToggle(group, state[group], btn);
@@ -1345,12 +1603,17 @@
     }
     renderParts();
     renderFotos();
+    renderDefektFotos();
+    renderRoster();
+    sicherheitFelderAnzeigen();
+    renderStruktur();
   }
 
   // ---- Initialisierung ----
   async function init(){
     let auftrag = null;
     try {
+      try { CONFIG = await apiGet('/api/config'); } catch(_) { /* Einstellungen optional */ }
       const [mitarbeiter, lager, memory, auftragData] = await Promise.all([
         apiGet('/api/mitarbeiter'),
         apiGet('/api/lager'),
@@ -1376,6 +1639,7 @@
     section('Gedächtnis-Funktionen initialisieren', initMemoryUI);
     section('Arbeitszeit-Liste aktualisieren', refreshArbeitszeitListe);
     if(auftrag) section('Gespeicherte Daten anwenden', ()=>applyDaten(auftrag.daten));
+    section('Schritt-2-Strukturfelder', ()=>{ sicherheitFelderAnzeigen(); renderStruktur(); updateSicherheit(); });
     section('Datum/Uhrzeit einfügen', setAktuellesDatumWennLeer);
     section('Anzeige aktualisieren', ()=>{ updateBranches(); updateFlow(); updateProgress(); });
     loaded = true;

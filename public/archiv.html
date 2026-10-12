@@ -123,6 +123,7 @@
   const TEXT_LABELS = {
     ta_fehler_kunde: 'Fehlerbeschreibung (Kunde)',
     ta_komponenten_eingang: 'Mitgelieferte Komponenten',
+    ta_defekt_komponenten: 'Defekte Komponenten beim Eingang',
     ta_fehler_techniker: 'Fehlerbeschreibung (Techniker)',
     ta_austausch_komponenten: 'Benötigte Austausch-Komponenten',
     fehlerbildRueck: 'Fehlerbild bei erneuter Instandsetzung'
@@ -136,6 +137,9 @@
   function esc(s){ return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
   let alleEintraege = [];
+  let CONFIG = { messgroessen: [], fehlerkategorien: [] };
+  fetch('/api/config').then(r => r.json()).then(c => { CONFIG = c; }).catch(()=>{});
+  function io(v){ return v === 'ja' ? 'i.O.' : v === 'nein' ? 'n.i.O.' : '–'; }
 
   async function ladeListe(){
     const res = await fetch('/api/archiv');
@@ -184,6 +188,7 @@
     const ersatzteile = d.ersatzteile || [];
     const testSeg = d.testSeg || {};
     const fotos = d.fotos || [];
+    const defektFotos = d.defektFotos || [];
     const state = d.state || {};
 
     let html = '';
@@ -206,14 +211,53 @@
       }</div></div>`;
     }
 
+    if(defektFotos.length){
+      html += `<div class="d-section"><h3>Fotos (defekte Komponenten beim Eingang)</h3><div class="photo-thumbs">${
+        defektFotos.map((src,i)=>`<div class="photo-thumb"><img src="${src}" alt="Defekt-Foto ${i+1}"></div>`).join('')
+      }</div></div>`;
+    }
+
     html += `<div class="d-section"><h3>Ja/Nein-Entscheidungen</h3><div class="d-checklist">
       Vorabinfo Kunde: <b>${state.vorabinfo ? esc(state.vorabinfo) : '–'}</b><br>
+      Defekte Komponenten beim Eingang: <b>${state.defekt ? esc(state.defekt) : '–'}</b><br>
+      Ergebnis Sichtprüfung: <b>${io(state.sichtpruefung)}</b> ·
+      Sicherheitsprüfung: <b>${io(state.sicherheit2)}</b> ·
+      Funktionstest (Eingang): <b>${io(state.funktionstest)}</b><br>
       Kostenvoranschlag nötig: <b>${state.kvDecision ? esc(state.kvDecision) : '–'}</b><br>
       Kundenfreigabe erhalten: <b>${state.freigabeErhalten ? 'Ja' : 'Nein'}</b><br>
       Test insgesamt i.O.: <b>${state.testok ? esc(state.testok) : '–'}</b><br>
       Standardkopf – Schall: <b>${testSeg.schall === 'ok' ? 'i.O.' : testSeg.schall === 'bad' ? 'n.i.O.' : '–'}</b> ·
       Standardkopf – Reset: <b>${testSeg.reset === 'ok' ? 'i.O.' : testSeg.reset === 'bad' ? 'n.i.O.' : '–'}</b>
     </div></div>`;
+
+    const si = d.sicherheit || {};
+    if(si.schutzklasse || si.rpe || si.riso || si.geraet){
+      html += `<div class="d-section"><h3>Sicherheitsprüfung vor Inbetriebnahme</h3><div class="d-checklist">
+        Schutzklasse: <b>${esc(si.schutzklasse) || '–'}</b> ·
+        R<sub>PE</sub>: <b>${si.rpe !== '' && si.rpe != null ? esc(si.rpe) + ' Ω' : '–'}</b> ·
+        R<sub>ISO</sub>: <b>${si.riso !== '' && si.riso != null ? esc(si.riso) + ' MΩ' : '–'}</b> ·
+        Prüfgerät: <b>${esc(si.geraet) || '–'}</b>
+      </div></div>`;
+    }
+    const fg = d.freigabe || {};
+    if(fg.datum || fg.art || fg.von || fg.notiz){
+      html += `<div class="d-section"><h3>Kundenfreigabe (Nachweis)</h3><div class="d-checklist">
+        Datum: <b>${fg.datum ? esc(new Date(fg.datum).toLocaleDateString('de-DE')) : '–'}</b> ·
+        Art: <b>${esc(fg.art) || '–'}</b> · entgegengenommen von: <b>${esc(fg.von) || '–'}</b>
+        ${fg.notiz ? '<br>Notiz: ' + esc(fg.notiz) : ''}
+      </div></div>`;
+    }
+    const katIds = d.fehlerkategorien || [];
+    const mw = d.messwerte || {};
+    const mwIds = Object.keys(mw).filter(k => String(mw[k] ?? '').trim() !== '');
+    if(katIds.length || mwIds.length){
+      const name = (liste, id) => { const e = (CONFIG[liste] || []).find(x => x.id === id); return e ? e.name : id; };
+      const einheit = id => { const e = (CONFIG.messgroessen || []).find(x => x.id === id); return e && e.einheit ? ' ' + e.einheit : ''; };
+      html += `<div class="d-section"><h3>Fehlerkategorie &amp; Messwerte</h3><div class="d-checklist">
+        ${katIds.length ? 'Kategorie: <b>' + katIds.map(id => esc(name('fehlerkategorien', id))).join(', ') + '</b><br>' : ''}
+        ${mwIds.map(id => esc(name('messgroessen', id)) + ': <b>' + esc(mw[id]) + esc(einheit(id)) + '</b>').join(' · ')}
+      </div></div>`;
+    }
 
     html += `<div class="d-section"><h3>Checkliste</h3><div class="d-checklist">`;
     CHECK_STEPS.forEach(step=>{

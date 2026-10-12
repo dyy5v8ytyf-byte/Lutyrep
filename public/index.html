@@ -32,6 +32,30 @@
   .st-fertig{background:#e5f6ec;color:#1f7a48;}
   .empty{padding:30px;text-align:center;color:var(--muted);font-size:.9rem;}
   .del{border:none;background:none;color:var(--red);cursor:pointer;font-size:.85rem;}
+
+  /* Update 10/2026: Bestellbedarf-Kachel, Suche/Filter, Sortierung, Papierkorb */
+  .bedarf{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--border);border-left:5px solid var(--green);border-radius:10px;padding:12px 16px;margin-bottom:16px;text-decoration:none;color:var(--text);}
+  .bedarf.warn{border-left-color:var(--red);background:#fffafa;}
+  .bedarf .zahl{font-size:1.6rem;font-weight:800;min-width:2ch;text-align:center;}
+  .bedarf.warn .zahl{color:var(--red);}
+  .bedarf .txt{font-size:.88rem;line-height:1.4;}
+  .bedarf .txt small{color:var(--muted);}
+  .filterRow{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;align-items:center;}
+  .filterRow input,.filterRow select{border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:.88rem;background:#fff;}
+  .filterRow input{flex:1;min-width:200px;}
+  .filterRow .count{font-size:.8rem;color:var(--muted);}
+  thead th.sortable{cursor:pointer;user-select:none;}
+  thead th.sortable:hover{color:var(--navy-dark);}
+  thead th .arr{font-size:.7rem;margin-left:4px;}
+  .tableWrap{overflow-x:auto;border-radius:12px;}
+  .trash{margin-top:22px;}
+  .trash details, .trash table{display:table;}
+
+  .trash summary{cursor:pointer;font-size:.88rem;font-weight:600;color:var(--muted);padding:6px 0;}
+  .trash table{margin-top:8px;}
+  .trash tbody tr:hover{cursor:default;}
+  .restore{border:1px solid var(--border);background:#fff;color:var(--navy-dark);border-radius:6px;padding:4px 10px;font-size:.8rem;cursor:pointer;}
+  .grund{font-size:.75rem;color:var(--muted);}
   footer{margin-top:20px;font-size:.75rem;color:var(--muted);text-align:center;}
 
   @media (max-width: 480px){
@@ -68,16 +92,56 @@
   <div class="toolsRow">
     <a href="lager.html">📦 Lagerbestand verwalten</a>
     <a href="archiv.html">🗄️ Archiv – abgeschlossene Checklisten</a>
+    <a href="einstellungen.html">⚙️ Einstellungen</a>
   </div>
 
-  <table>
+  <a class="bedarf" id="bedarfBox" href="lager.html?filter=bestellbedarf">
+    <div class="zahl" id="bedarfZahl">–</div>
+    <div class="txt" id="bedarfTxt">Bestellbedarf wird geladen…</div>
+  </a>
+
+  <div class="filterRow">
+    <input type="text" id="suche" placeholder="Suche: WAWI-Nr., Kunde, Gerät, Seriennummer…">
+    <select id="statusFilter">
+      <option value="">Alle Status</option>
+      <option value="offen">Nur offene</option>
+      <option value="Neuer Auftrag">Neuer Auftrag</option>
+      <option value="In Werkstattprüfung">In Werkstattprüfung</option>
+      <option value="Sicherheitsprüfung n.i.O.">Sicherheitsprüfung n.i.O.</option>
+      <option value="In Diagnose (E-Werkstatt)">In Diagnose (E-Werkstatt)</option>
+      <option value="Wartet auf Kundenfreigabe (KV)">Wartet auf Kundenfreigabe (KV)</option>
+      <option value="In endgültiger Instandsetzung">In endgültiger Instandsetzung</option>
+      <option value="Erneute Instandsetzung nötig">Erneute Instandsetzung nötig</option>
+      <option value="Bereit zur Endkontrolle">Bereit zur Endkontrolle</option>
+      <option value="Versendet / Abgeschlossen">Versendet / Abgeschlossen</option>
+    </select>
+    <span class="count" id="trefferInfo"></span>
+  </div>
+
+  <div class="tableWrap"><table>
     <thead>
-      <tr><th>WAWI-Nr.</th><th>Kunde</th><th>Gerätetyp</th><th>Serien-Nr.</th><th>Status</th><th>Zuletzt geändert</th><th></th></tr>
+      <tr>
+        <th class="sortable" data-sort="wawi">WAWI-Nr.<span class="arr"></span></th>
+        <th class="sortable" data-sort="kunde">Kunde<span class="arr"></span></th>
+        <th class="sortable" data-sort="geraet">Gerätetyp<span class="arr"></span></th>
+        <th class="sortable" data-sort="serien">Serien-Nr.<span class="arr"></span></th>
+        <th class="sortable" data-sort="status">Status<span class="arr"></span></th>
+        <th class="sortable" data-sort="aktualisiertAm">Zuletzt geändert<span class="arr"></span></th>
+        <th></th>
+      </tr>
     </thead>
     <tbody id="tbody"><tr><td colspan="7" class="empty">Lädt…</td></tr></tbody>
-  </table>
+  </table></div>
 
-  <footer>Lutyrep v1.0 · Alle Daten liegen zentral auf diesem Server – jeder Nutzer sieht denselben, aktuellen Stand.</footer>
+  <details class="trash" id="trashBox">
+    <summary id="trashSummary">🗑️ Papierkorb</summary>
+    <table>
+      <thead><tr><th>WAWI-Nr.</th><th>Kunde</th><th>Gerätetyp</th><th>Serien-Nr.</th><th>Gelöscht am</th><th></th></tr></thead>
+      <tbody id="trashBody"><tr><td colspan="6" class="empty">Papierkorb ist leer.</td></tr></tbody>
+    </table>
+  </details>
+
+  <footer>Lutyrep v1.1 · Alle Daten liegen zentral auf diesem Server – jeder Nutzer sieht denselben, aktuellen Stand.</footer>
 </div>
 
 <div class="modal-overlay" id="modalOverlay">
@@ -85,7 +149,7 @@
     <div class="modal-msg" id="modalMsg"></div>
     <div class="modal-actions">
       <button class="modal-btn-cancel" id="modalCancelBtn" type="button">Abbrechen</button>
-      <button class="modal-btn-ok" id="modalOkBtn" type="button">Löschen</button>
+      <button class="modal-btn-ok" id="modalOkBtn" type="button">In Papierkorb</button>
     </div>
   </div>
 </div>
@@ -117,42 +181,155 @@ function statusClass(s){
   if(s === 'Neuer Auftrag') return 'st-neu';
   return 'st-arbeit';
 }
+// Alle Texte aus der Datenbank werden vor der Anzeige "entschärft" - sonst würde z. B. ein
+// Kundenname mit "<" oder "&" die Tabelle zerstören.
+function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function fmtDate(iso){
+  if(!iso) return '–';
   const d = new Date(iso);
   return d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}) + ' ' + d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
 }
+
+let alleAuftraege = [];
+let sortKey = 'aktualisiertAm', sortAsc = false;
+// Filter/Sortierung pro Browser merken (rein komfortabel, nicht kritisch)
+try {
+  const gespeichert = JSON.parse(localStorage.getItem('lutyrep_dashboard') || '{}');
+  if(gespeichert.sortKey){ sortKey = gespeichert.sortKey; sortAsc = !!gespeichert.sortAsc; }
+  if(gespeichert.status !== undefined) document.getElementById('statusFilter').value = gespeichert.status;
+} catch(_) {}
+function merken(){
+  try { localStorage.setItem('lutyrep_dashboard', JSON.stringify({ sortKey, sortAsc, status: document.getElementById('statusFilter').value })); } catch(_) {}
+}
+
 async function load(){
-  const res = await fetch('/api/auftraege');
-  const rows = await res.json();
+  try {
+    const res = await fetch('/api/auftraege');
+    alleAuftraege = await res.json();
+  } catch(e){
+    document.getElementById('tbody').innerHTML = '<tr><td colspan="7" class="empty">Aufträge konnten nicht geladen werden: ' + esc(e.message) + '</td></tr>';
+    return;
+  }
+  render();
+  loadTrash();
+}
+
+function render(){
   const tbody = document.getElementById('tbody');
-  if(!rows.length){
+  const q = document.getElementById('suche').value.trim().toLowerCase();
+  const st = document.getElementById('statusFilter').value;
+  let rows = alleAuftraege.slice();
+  if(q){
+    rows = rows.filter(r => [r.wawi, r.kunde, r.geraet, r.serien].some(v => String(v || '').toLowerCase().includes(q)));
+  }
+  if(st === 'offen') rows = rows.filter(r => statusClass(r.status) !== 'st-fertig');
+  else if(st) rows = rows.filter(r => r.status === st);
+
+  rows.sort((a, b) => {
+    let va = a[sortKey] || '', vb = b[sortKey] || '';
+    let c;
+    if(sortKey === 'aktualisiertAm') c = new Date(va) - new Date(vb);
+    else c = String(va).localeCompare(String(vb), 'de', { numeric: true, sensitivity: 'base' });
+    return sortAsc ? c : -c;
+  });
+
+  document.querySelectorAll('thead th.sortable').forEach(th => {
+    th.querySelector('.arr').textContent = th.dataset.sort === sortKey ? (sortAsc ? '▲' : '▼') : '';
+  });
+  document.getElementById('trefferInfo').textContent = (q || st) ? rows.length + ' von ' + alleAuftraege.length + ' Aufträgen' : alleAuftraege.length + ' Aufträge';
+
+  if(!alleAuftraege.length){
     tbody.innerHTML = '<tr><td colspan="7" class="empty">Noch keine Aufträge angelegt – oben auf „+ Neuer Auftrag" klicken.</td></tr>';
     return;
   }
+  if(!rows.length){
+    tbody.innerHTML = '<tr><td colspan="7" class="empty">Keine Aufträge zu Suche/Filter gefunden.</td></tr>';
+    return;
+  }
   tbody.innerHTML = rows.map(r => `
-    <tr onclick="location.href='auftrag.html?id=${r.id}'">
-      <td>${r.wawi || '–'}</td>
-      <td>${r.kunde || '–'}</td>
-      <td>${r.geraet || '–'}</td>
-      <td>${r.serien || '–'}</td>
-      <td><span class="status-pill ${statusClass(r.status)}">${r.status}</span></td>
+    <tr data-id="${Number(r.id)}">
+      <td>${esc(r.wawi) || '–'}</td>
+      <td>${esc(r.kunde) || '–'}</td>
+      <td>${esc(r.geraet) || '–'}</td>
+      <td>${esc(r.serien) || '–'}</td>
+      <td><span class="status-pill ${statusClass(r.status)}">${esc(r.status)}</span></td>
       <td>${fmtDate(r.aktualisiertAm)}</td>
-      <td><button class="del" onclick="event.stopPropagation(); del(${r.id})">löschen</button></td>
+      <td><button class="del" type="button" data-del="${Number(r.id)}" title="In den Papierkorb verschieben (wiederherstellbar)">löschen</button></td>
     </tr>
   `).join('');
+  tbody.querySelectorAll('tr[data-id]').forEach(tr => {
+    tr.addEventListener('click', () => { location.href = 'auftrag.html?id=' + tr.dataset.id; });
+  });
+  tbody.querySelectorAll('button[data-del]').forEach(b => {
+    b.addEventListener('click', (e) => { e.stopPropagation(); del(Number(b.dataset.del)); });
+  });
 }
+
+document.getElementById('suche').addEventListener('input', render);
+document.getElementById('statusFilter').addEventListener('change', () => { merken(); render(); });
+document.querySelectorAll('thead th.sortable').forEach(th => {
+  th.addEventListener('click', () => {
+    if(sortKey === th.dataset.sort) sortAsc = !sortAsc;
+    else { sortKey = th.dataset.sort; sortAsc = th.dataset.sort !== 'aktualisiertAm'; }
+    merken(); render();
+  });
+});
+
 async function del(id){
-  const ok = await showConfirm('Diesen Auftrag endgültig löschen?');
+  const ok = await showConfirm('Diesen Auftrag in den Papierkorb verschieben? Er bleibt vollständig erhalten und kann unten unter „Papierkorb" jederzeit wiederhergestellt werden.');
   if(!ok) return;
   await fetch('/api/auftraege/' + id, { method:'DELETE' });
   load();
 }
+
+async function loadTrash(){
+  let rows = [];
+  try { rows = await (await fetch('/api/papierkorb')).json(); } catch(_) { return; }
+  document.getElementById('trashSummary').textContent = '🗑️ Papierkorb (' + rows.length + ')';
+  const tb = document.getElementById('trashBody');
+  if(!rows.length){ tb.innerHTML = '<tr><td colspan="6" class="empty">Papierkorb ist leer.</td></tr>'; return; }
+  tb.innerHTML = rows.map(r => `
+    <tr>
+      <td>${esc(r.wawi) || '–'}</td>
+      <td>${esc(r.kunde) || '–'}</td>
+      <td>${esc(r.geraet) || '–'}</td>
+      <td>${esc(r.serien) || '–'}</td>
+      <td>${fmtDate(r.geloeschtAm)}<br><span class="grund">${esc(r.loeschGrund)}</span></td>
+      <td><button class="restore" type="button" data-restore="${Number(r.id)}">wiederherstellen</button></td>
+    </tr>
+  `).join('');
+  tb.querySelectorAll('button[data-restore]').forEach(b => {
+    b.addEventListener('click', async () => {
+      await fetch('/api/papierkorb/' + b.dataset.restore + '/wiederherstellen', { method:'POST' });
+      load();
+    });
+  });
+}
+
+async function loadBedarf(){
+  const box = document.getElementById('bedarfBox');
+  try {
+    const rows = await (await fetch('/api/bestellbedarf')).json();
+    document.getElementById('bedarfZahl').textContent = rows.length;
+    box.classList.toggle('warn', rows.length > 0);
+    if(rows.length){
+      const namen = rows.slice(0, 4).map(r => esc(r.name) + ' (' + esc(r.bestand) + '/' + esc(r.mindestbestand) + ')').join(', ');
+      document.getElementById('bedarfTxt').innerHTML = '<b>' + (rows.length === 1 ? 'Teil muss' : 'Teile müssen') + ' nachbestellt werden</b><br><small>' + namen + (rows.length > 4 ? ' …' : '') + ' – klicken für die vollständige Liste</small>';
+    } else {
+      document.getElementById('bedarfTxt').innerHTML = '<b>Kein Bestellbedarf</b><br><small>Gemeldet werden nur Teile mit eingetragenem Mindestbestand (Lagerbestand-Seite).</small>';
+    }
+  } catch(_) {
+    document.getElementById('bedarfTxt').textContent = 'Bestellbedarf konnte nicht geladen werden.';
+  }
+}
+
 document.getElementById('newAuftragBtn').addEventListener('click', async ()=>{
   const res = await fetch('/api/auftraege', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({daten:{}}) });
   const { id } = await res.json();
   location.href = 'auftrag.html?id=' + id;
 });
 load();
+loadBedarf();
 </script>
 </body>
 </html>

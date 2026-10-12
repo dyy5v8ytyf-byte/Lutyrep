@@ -13,7 +13,7 @@
   header h1{margin:0 0 4px;font-size:1.3rem;}
   a.back{color:#cbd6e2;font-size:.82rem;text-decoration:none;}
   .searchRow{display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap;}
-  .searchRow input{flex:1;min-width:200px;border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:.9rem;font-family:inherit;}
+  .searchRow input[type=text]{flex:1;min-width:200px;border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:.9rem;font-family:inherit;}
   .searchInfo{font-size:.78rem;color:var(--muted);}
   table{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden;border:1px solid var(--border);}
   thead th{background:var(--light);text-align:left;padding:9px 12px;font-size:.72rem;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);}
@@ -53,6 +53,10 @@
     .importRow{flex-direction:column;align-items:stretch;}
     .importRow button, .importRow label.fileBtn{width:100%;text-align:center;}
   }
+  /* Update 10/2026: Mindestbestand / Bestellbedarf */
+  tr.bedarfRow td{background:#fdeeee;}
+  tr.bedarfRow td:first-child{box-shadow:inset 4px 0 0 #c94b4b;}
+  .nurBedarf{font-size:.85rem;white-space:nowrap;display:flex;align-items:center;gap:6px;cursor:pointer;}
 </style>
 </head>
 <body>
@@ -64,11 +68,12 @@
 
   <div class="searchRow">
     <input type="text" id="searchInp" placeholder="Suche nach Bezeichnung oder Artikelnummer...">
+    <label class="nurBedarf"><input type="checkbox" id="nurBedarf"> nur Bestellbedarf</label>
     <span class="searchInfo" id="searchInfo"></span>
   </div>
 
   <table>
-    <thead><tr><th>Artikelnr.</th><th>Bezeichnung</th><th>Ist-Bestand</th><th>EK-Preis (€)</th><th>VK-Preis (€)</th><th></th></tr></thead>
+    <thead><tr><th>Artikelnr.</th><th>Bezeichnung</th><th>Ist-Bestand</th><th>Mindest&shy;bestand</th><th>EK-Preis (€)</th><th>VK-Preis (€)</th><th></th></tr></thead>
     <tbody id="tbody"></tbody>
   </table>
   <div class="addRow">
@@ -79,13 +84,13 @@
     <input type="number" id="newVkPreis" placeholder="VK-Preis €" step="0.01">
     <button id="addBtn">+ Hinzufügen</button>
   </div>
-  <p style="font-size:.8rem;color:var(--muted);margin-top:10px;">EK-Preis = Einkaufspreis (was Wwtec zahlt). VK-Preis = Verkaufspreis, der dem Kunden im Kostenvoranschlag berechnet wird. Die Artikelnummer identifiziert einen Artikel eindeutig, auch wenn mehrere Artikel die gleiche Bezeichnung haben.</p>
+  <p style="font-size:.8rem;color:var(--muted);margin-top:10px;">EK-Preis = Einkaufspreis (was Wwtec zahlt). VK-Preis = Verkaufspreis, der dem Kunden im Kostenvoranschlag berechnet wird. Die Artikelnummer identifiziert einen Artikel eindeutig, auch wenn mehrere Artikel die gleiche Bezeichnung haben. <b>Mindestbestand:</b> Fällt der Ist-Bestand auf diesen Wert oder darunter, erscheint der Artikel als Bestellbedarf auf der Übersichtsseite (rot markiert). Leer = keine Überwachung.</p>
 
   <div class="importBox">
     <h2>📥 Artikel-/Preisimport per CSV</h2>
     <p>Für Massenpflege in Excel: Liste als CSV exportieren, in Excel bearbeiten (Preise anpassen, neue Ersatzteile anhängen), als CSV speichern und wieder importieren. Auch ein Export direkt aus einem ERP-System (z. B. mit den Spalten Nummer/Kurzbezeichnung) wird erkannt.</p>
-    <p><b>Erkannte Spalten (Groß-/Kleinschreibung egal):</b> Artikelnummer/Nummer, Bezeichnung/Kurzbezeichnung, Bestand, EK-Preis, VK-Preis. Semikolon-, Komma- oder Tab-getrennt; deutsches Komma als Dezimaltrennzeichen wird erkannt.</p>
-    <p><b>Wichtig:</b> Hat eine Zeile eine Artikelnummer, ist diese das eindeutige Kennzeichen – bei einem bereits vorhandenen Artikel (gleiche Artikelnummer) werden beim Import <b>nur die Preise</b> übernommen, der Lagerbestand bleibt unangetastet. Ohne Artikelnummer wird stattdessen (nur unter bereits namensgleichen Artikeln ohne eigene Artikelnummer) nach der Bezeichnung gematcht. Neue Artikel werden mit dem angegebenen Bestand (falls vorhanden, sonst 0) neu angelegt.</p>
+    <p><b>Erkannte Spalten (Groß-/Kleinschreibung egal):</b> Artikelnummer/Nummer, Bezeichnung/Kurzbezeichnung, Bestand, EK-Preis, VK-Preis, Mindestbestand. Semikolon-, Komma- oder Tab-getrennt; deutsches Komma als Dezimaltrennzeichen wird erkannt.</p>
+    <p><b>Wichtig:</b> Hat eine Zeile eine Artikelnummer, ist diese das eindeutige Kennzeichen – bei einem bereits vorhandenen Artikel (gleiche Artikelnummer) werden beim Import <b>nur die Preise und – falls angegeben – der Mindestbestand</b> übernommen, der Ist-Bestand bleibt unangetastet. Ohne Artikelnummer wird stattdessen (nur unter bereits namensgleichen Artikeln ohne eigene Artikelnummer) nach der Bezeichnung gematcht. Neue Artikel werden mit dem angegebenen Bestand (falls vorhanden, sonst 0) neu angelegt.</p>
     <div class="importRow">
       <button id="exportCsvBtn" type="button" class="secondary">⬇️ Aktuelle Liste als CSV exportieren</button>
       <label class="fileBtn" for="importFile">📄 CSV-Datei wählen</label>
@@ -110,6 +115,7 @@ function render(){
   const query = document.getElementById('searchInp').value.trim().toLowerCase();
   let liste = Object.values(alleArtikel);
   const gesamt = liste.length;
+  if(document.getElementById('nurBedarf').checked) liste = liste.filter(istBedarf);
   if(query){
     liste = liste.filter(v =>
       (v.name || '').toLowerCase().includes(query) ||
@@ -121,7 +127,9 @@ function render(){
   const info = document.getElementById('searchInfo');
   const anzahlTreffer = liste.length;
   const angezeigt = Math.min(anzahlTreffer, MAX_ROWS_ANZEIGEN);
-  if(query){
+  if(document.getElementById('nurBedarf').checked){
+    info.textContent = anzahlTreffer + ' Artikel mit Bestellbedarf (von ' + gesamt + ' Artikeln insgesamt)';
+  } else if(query){
     info.textContent = anzahlTreffer + ' Treffer' + (anzahlTreffer > angezeigt ? ' (zeige ' + angezeigt + ' – bitte genauer eingeben für weniger Treffer)' : '');
   } else {
     info.textContent = gesamt + ' Artikel insgesamt' + (gesamt > angezeigt ? ' (zeige die ersten ' + angezeigt + ' – Suche nutzen, um andere zu finden)' : '');
@@ -130,17 +138,18 @@ function render(){
   const sichtbar = liste.slice(0, MAX_ROWS_ANZEIGEN);
   const tbody = document.getElementById('tbody');
   tbody.innerHTML = sichtbar.map(v => `
-    <tr>
+    <tr class="${istBedarf(v) ? 'bedarfRow' : ''}">
       <td class="nummerCell">${esc(v.nummer || '–')}</td>
       <td>${esc(v.name)}</td>
       <td><input type="number" min="0" data-id="${esc(v.id)}" data-field="bestand" value="${v.bestand}"></td>
+      <td><input type="number" min="0" data-id="${esc(v.id)}" data-field="mindestbestand" value="${v.mindestbestand ?? ''}" placeholder="–" title="Leer lassen = keine Bestellbedarf-Meldung für diesen Artikel"></td>
       <td><input type="number" min="0" step="0.01" data-id="${esc(v.id)}" data-field="ekPreis" value="${v.ekPreis ?? ''}"></td>
       <td><input type="number" min="0" step="0.01" data-id="${esc(v.id)}" data-field="vkPreis" value="${v.vkPreis ?? ''}"></td>
       <td><span class="savedTag" id="tag-${cssId(v.id)}">gespeichert ✓</span></td>
     </tr>
   `).join('');
   if(!sichtbar.length){
-    tbody.innerHTML = '<tr><td colspan="6" class="moreNote">Keine Artikel gefunden.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" class="moreNote">Keine Artikel gefunden.</td></tr>';
   }
   tbody.querySelectorAll('input').forEach(inp=>{
     inp.addEventListener('change', async ()=>{
@@ -149,12 +158,18 @@ function render(){
       body[field] = inp.value === '' ? null : Number(inp.value);
       await fetch('/api/lager/' + encodeURIComponent(id), { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
       if(alleArtikel[id]) alleArtikel[id][field] = body[field];
+      const tr = inp.closest('tr');
+      if(tr && alleArtikel[id]) tr.classList.toggle('bedarfRow', istBedarf(alleArtikel[id]));
       const tag = document.getElementById('tag-' + cssId(id));
       if(tag){ tag.classList.add('show'); setTimeout(()=>tag.classList.remove('show'), 1500); }
     });
   });
 }
 document.getElementById('searchInp').addEventListener('input', render);
+document.getElementById('nurBedarf').addEventListener('change', render);
+// Bestellbedarf = Mindestbestand eingetragen UND Ist-Bestand <= Mindestbestand
+function istBedarf(v){ return v && v.mindestbestand !== null && v.mindestbestand !== undefined && v.mindestbestand !== '' && Number(v.bestand) <= Number(v.mindestbestand); }
+if(new URLSearchParams(location.search).get('filter') === 'bestellbedarf') document.getElementById('nurBedarf').checked = true;
 
 function esc(s){ return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function cssId(id){ return String(id).replace(/[^a-zA-Z0-9]/g,'_'); }
@@ -175,12 +190,12 @@ document.getElementById('addBtn').addEventListener('click', async ()=>{
 document.getElementById('exportCsvBtn').addEventListener('click', async ()=>{
   const res = await fetch('/api/lager');
   const data = await res.json();
-  const zeilen = ['Artikelnummer;Bezeichnung;Bestand;EK-Preis;VK-Preis'];
+  const zeilen = ['Artikelnummer;Bezeichnung;Bestand;EK-Preis;VK-Preis;Mindestbestand'];
   Object.values(data).sort((a,b)=>(a.name||'').localeCompare(b.name||'','de')).forEach(v=>{
     const csvEsc = s => '"' + String(s).replace(/"/g,'""') + '"';
     const ek = v.ekPreis != null ? String(v.ekPreis).replace('.', ',') : '';
     const vk = v.vkPreis != null ? String(v.vkPreis).replace('.', ',') : '';
-    zeilen.push([csvEsc(v.nummer || ''), csvEsc(v.name), v.bestand, ek, vk].join(';'));
+    zeilen.push([csvEsc(v.nummer || ''), csvEsc(v.name), v.bestand, ek, vk, v.mindestbestand ?? ''].join(';'));
   });
   // BOM (﻿) voranstellen, damit Excel Umlaute korrekt anzeigt
   const blob = new Blob(['﻿' + zeilen.join('\r\n')], {type:'text/csv;charset=utf-8;'});
@@ -276,7 +291,8 @@ document.getElementById('importCsvBtn').addEventListener('click', async ()=>{
     name: header.findIndex(h => ['bezeichnung','name','artikel','ersatzteil','kurzbezeichnung'].includes(h)),
     bestand: header.findIndex(h => ['bestand','menge','anzahl','stück','stk','stueck','iststand'].includes(h)),
     ekPreis: header.findIndex(h => ['ekpreis','ek','einkaufspreis'].includes(h)),
-    vkPreis: header.findIndex(h => ['vkpreis','vk','verkaufspreis','preis','0'].includes(h))
+    vkPreis: header.findIndex(h => ['vkpreis','vk','verkaufspreis','preis','0'].includes(h)),
+    mindestbestand: header.findIndex(h => ['mindestbestand','minbestand','meldebestand','min'].includes(h))
   };
   if(idx.name === -1 && idx.nummer === -1){
     showImportResult('Weder Spalte "Bezeichnung" noch "Artikelnummer" in der Kopfzeile gefunden. Bitte die Export-Vorlage als Muster verwenden.', 'err');
@@ -294,7 +310,8 @@ document.getElementById('importCsvBtn').addEventListener('click', async ()=>{
       nummer,
       bestand: idx.bestand !== -1 ? parseZahl(cells[idx.bestand]) : null,
       ekPreis: idx.ekPreis !== -1 ? parseZahl(cells[idx.ekPreis]) : null,
-      vkPreis: idx.vkPreis !== -1 ? parseZahl(cells[idx.vkPreis]) : null
+      vkPreis: idx.vkPreis !== -1 ? parseZahl(cells[idx.vkPreis]) : null,
+      mindestbestand: idx.mindestbestand !== -1 ? parseZahl(cells[idx.mindestbestand]) : null
     });
   }
   if(!rows.length){ showImportResult('Keine gültigen Zeilen in der Datei gefunden.', 'err'); return; }
@@ -305,7 +322,7 @@ document.getElementById('importCsvBtn').addEventListener('click', async ()=>{
     const result = await res.json();
     const teile = [];
     teile.push(result.neu.length + ' neu angelegt');
-    teile.push(result.aktualisiert.length + ' aktualisiert (nur Preise)');
+    teile.push(result.aktualisiert.length + ' aktualisiert (Preise/Mindestbestand, Ist-Bestand unverändert)');
     if(result.fehler.length) teile.push(result.fehler.length + ' Fehler' + (result.fehler.length <= 10 ? ': ' + result.fehler.join('; ') : ' (erste 10: ' + result.fehler.slice(0,10).join('; ') + ')'));
     showImportResult(teile.join(', ') + '.', (result.fehler.length > 0 && !result.neu.length && !result.aktualisiert.length) ? 'err' : 'ok');
     load();
