@@ -80,7 +80,7 @@
 
   <div class="search-box">
     <label>Suche (Seriennummer, Kunde oder Gerät)</label>
-    <input type="text" id="searchInput" placeholder="z. B. SN-12345">
+    <input type="text" id="searchInput" placeholder="Seriennummer, WAWI-Nr., Kunde oder Gerät">
   </div>
 
   <table id="listTable">
@@ -123,6 +123,8 @@
   const TEXT_LABELS = {
     ta_fehler_kunde: 'Fehlerbeschreibung (Kunde)',
     ta_komponenten_eingang: 'Mitgelieferte Komponenten',
+    ta_defekt_komponenten: 'Defekte Komponenten beim Eingang',
+    ta_abweichung_komponenten: 'Abweichung Vollständigkeit (Endkontrolle)',
     ta_fehler_techniker: 'Fehlerbeschreibung (Techniker)',
     ta_austausch_komponenten: 'Benötigte Austausch-Komponenten',
     fehlerbildRueck: 'Fehlerbild bei erneuter Instandsetzung'
@@ -136,6 +138,9 @@
   function esc(s){ return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
   let alleEintraege = [];
+  let CONFIG = { messgroessen: [], fehlerkategorien: [] };
+  fetch('/api/config').then(r => r.json()).then(c => { CONFIG = c; }).catch(()=>{});
+  function io(v){ return v === 'ja' ? 'i.O.' : v === 'nein' ? 'n.i.O.' : '–'; }
 
   async function ladeListe(){
     const res = await fetch('/api/archiv');
@@ -169,7 +174,8 @@
     renderListe(alleEintraege.filter(x =>
       (x.serien||'').toLowerCase().includes(q) ||
       (x.kunde||'').toLowerCase().includes(q) ||
-      (x.geraet||'').toLowerCase().includes(q)
+      (x.geraet||'').toLowerCase().includes(q) ||
+      (x.wawi||'').toLowerCase().includes(q)
     ));
   });
 
@@ -184,12 +190,14 @@
     const ersatzteile = d.ersatzteile || [];
     const testSeg = d.testSeg || {};
     const fotos = d.fotos || [];
+    const defektFotos = d.defektFotos || [];
     const state = d.state || {};
 
     let html = '';
     html += `<div class="detail-actions">
       <button class="btn-back" type="button" id="backBtn">← Zurück zur Liste</button>
-      <button class="btn-print" type="button" id="printDetailBtn">Diese Ansicht drucken</button>
+      <button class="btn-print" type="button" id="printDetailBtn">Interne Ansicht drucken</button>
+      <a class="btn-print" style="text-decoration:none;display:inline-block;" href="protokoll.html?archiv=${encodeURIComponent(e.id)}" target="_blank">📄 Kunden-Prüfprotokoll</a>
     </div>`;
     html += `<div class="d-meta">
       <div><label>Kunde</label><span>${esc(e.kunde) || '–'}</span></div>
@@ -197,7 +205,7 @@
       <div><label>Seriennummer</label><span>${esc(e.serien) || '–'}</span></div>
       <div><label>WAWI-Nr.</label><span>${esc(e.wawi) || '–'}</span></div>
       <div><label>Status bei Abschluss</label><span>${esc(e.status) || '–'}</span></div>
-      <div><label>Archiviert am</label><span>${fmtDate(e.archiviertAm)}</span></div>
+      <div><label>Archiviert am</label><span>${fmtDate(e.archiviertAm)}${e.aktualisiertAm ? '<br><small>aktualisiert ' + fmtDate(e.aktualisiertAm) + (Array.isArray(e.versionen) && e.versionen.length ? ' · ' + e.versionen.length + ' frühere Version(en)' : '') + '</small>' : ''}</span></div>
     </div>`;
 
     if(fotos.length){
@@ -206,14 +214,53 @@
       }</div></div>`;
     }
 
+    if(defektFotos.length){
+      html += `<div class="d-section"><h3>Fotos (defekte Komponenten beim Eingang)</h3><div class="photo-thumbs">${
+        defektFotos.map((src,i)=>`<div class="photo-thumb"><img src="${src}" alt="Defekt-Foto ${i+1}"></div>`).join('')
+      }</div></div>`;
+    }
+
     html += `<div class="d-section"><h3>Ja/Nein-Entscheidungen</h3><div class="d-checklist">
       Vorabinfo Kunde: <b>${state.vorabinfo ? esc(state.vorabinfo) : '–'}</b><br>
+      Defekte Komponenten beim Eingang: <b>${state.defekt ? esc(state.defekt) : '–'}</b><br>
+      Ergebnis Sichtprüfung: <b>${io(state.sichtpruefung)}</b> ·
+      Sicherheitsprüfung: <b>${io(state.sicherheit2)}</b> ·
+      Funktionstest (Eingang): <b>${io(state.funktionstest)}</b><br>
       Kostenvoranschlag nötig: <b>${state.kvDecision ? esc(state.kvDecision) : '–'}</b><br>
       Kundenfreigabe erhalten: <b>${state.freigabeErhalten ? 'Ja' : 'Nein'}</b><br>
       Test insgesamt i.O.: <b>${state.testok ? esc(state.testok) : '–'}</b><br>
       Standardkopf – Schall: <b>${testSeg.schall === 'ok' ? 'i.O.' : testSeg.schall === 'bad' ? 'n.i.O.' : '–'}</b> ·
       Standardkopf – Reset: <b>${testSeg.reset === 'ok' ? 'i.O.' : testSeg.reset === 'bad' ? 'n.i.O.' : '–'}</b>
     </div></div>`;
+
+    const si = d.sicherheit || {};
+    if(si.schutzklasse || si.rpe || si.riso || si.geraet){
+      html += `<div class="d-section"><h3>Sicherheitsprüfung vor Inbetriebnahme</h3><div class="d-checklist">
+        Schutzklasse: <b>${esc(si.schutzklasse) || '–'}</b> ·
+        R<sub>PE</sub>: <b>${si.rpe !== '' && si.rpe != null ? esc(si.rpe) + ' Ω' : '–'}</b> ·
+        R<sub>ISO</sub>: <b>${si.riso !== '' && si.riso != null ? esc(si.riso) + ' MΩ' : '–'}</b> ·
+        Prüfgerät: <b>${esc(si.geraet) || '–'}</b>
+      </div></div>`;
+    }
+    const fg = d.freigabe || {};
+    if(fg.datum || fg.art || fg.von || fg.notiz){
+      html += `<div class="d-section"><h3>Kundenfreigabe (Nachweis)</h3><div class="d-checklist">
+        Datum: <b>${fg.datum ? esc(new Date(fg.datum).toLocaleDateString('de-DE')) : '–'}</b> ·
+        Art: <b>${esc(fg.art) || '–'}</b> · entgegengenommen von: <b>${esc(fg.von) || '–'}</b>
+        ${fg.notiz ? '<br>Notiz: ' + esc(fg.notiz) : ''}
+      </div></div>`;
+    }
+    const katIds = d.fehlerkategorien || [];
+    const mw = d.messwerte || {};
+    const mwIds = Object.keys(mw).filter(k => String(mw[k] ?? '').trim() !== '');
+    if(katIds.length || mwIds.length){
+      const name = (liste, id) => { const e = (CONFIG[liste] || []).find(x => x.id === id); return e ? e.name : id; };
+      const einheit = id => { const e = (CONFIG.messgroessen || []).find(x => x.id === id); return e && e.einheit ? ' ' + e.einheit : ''; };
+      html += `<div class="d-section"><h3>Fehlerkategorie &amp; Messwerte</h3><div class="d-checklist">
+        ${katIds.length ? 'Kategorie: <b>' + katIds.map(id => esc(name('fehlerkategorien', id))).join(', ') + '</b><br>' : ''}
+        ${mwIds.map(id => esc(name('messgroessen', id)) + ': <b>' + esc(mw[id]) + esc(einheit(id)) + '</b>').join(' · ')}
+      </div></div>`;
+    }
 
     html += `<div class="d-section"><h3>Checkliste</h3><div class="d-checklist">`;
     CHECK_STEPS.forEach(step=>{
@@ -236,12 +283,40 @@
 
     if(ersatzteile.length){
       html += `<div class="d-section"><h3>Verwendete Ersatzteile</h3><div class="parts-list">${
-        ersatzteile.map(p=>`<div class="row"><span>${esc(p.name)} — Menge: ${esc(p.qty)}</span><span>VK: ${fmtEUR(p.vkPreis||0)} <span style="color:var(--muted);">(EK: ${fmtEUR(p.ekPreis||0)})</span></span></div>`).join('')
+        ersatzteile.map(p=>`<div class="row"><span>${esc(p.name)} — Menge: ${esc(p.qty)}${p.gebucht === false ? ' <i style="color:var(--muted);">(nur reserviert, nicht abgebucht)</i>' : ''}</span><span>VK: ${fmtEUR(p.vkPreis||0)} <span style="color:var(--muted);">(EK: ${fmtEUR(p.ekPreis||0)})</span></span></div>`).join('')
       }</div></div>`;
     }
 
     if(d.kvResultHtml){
-      html += `<div class="d-section"><h3>Kostenvoranschlag</h3><div class="kv-result">${d.kvResultHtml}</div></div>`;
+      html += `<div class="d-section"><h3>Kostenvoranschlag</h3><div class="kv-result">${d.kvResultHtml}</div>${
+        state.kvFreigegeben != null ? '<div class="d-checklist">Vom Kunden freigegeben: <b>' + fmtEUR(state.kvFreigegeben) + '</b>' + (state.kvFreigegebenAm ? ' am ' + esc(new Date(state.kvFreigegebenAm).toLocaleDateString('de-DE')) : '') + '</div>' : ''}</div>`;
+    }
+    const vs = d.versand || {};
+    if(state.endkontrolle || state.vollstaendig || vs.datum || vs.art){
+      html += `<div class="d-section"><h3>Endkontrolle &amp; Versand</h3><div class="d-checklist">
+        Endkontrolle: <b>${io(state.endkontrolle)}</b> · Vollständigkeit: <b>${state.vollstaendig === 'ja' ? 'vollständig' : state.vollstaendig === 'nein' ? 'Abweichung' : '–'}</b>
+        ${(texts.ta_abweichung_komponenten || '').trim() ? '<br>Abweichung: ' + esc(texts.ta_abweichung_komponenten) : ''}<br>
+        Versand: <b>${vs.datum ? esc(new Date(vs.datum).toLocaleDateString('de-DE')) : '–'}</b> · ${esc(vs.art) || '–'}
+        ${vs.sendungsnr ? ' · Sendungs-Nr. <b>' + esc(vs.sendungsnr) + '</b>' : ''}
+        ${vs.lieferschein ? ' · Lieferschein <b>' + esc(vs.lieferschein) + '</b>' : ''}
+        ${vs.rechnung ? ' · Rechnung <b>' + esc(vs.rechnung) + '</b>' : ''}
+      </div></div>`;
+    }
+    const si3 = d.sicherheit3 || {};
+    if(state.sicherheit3 || si3.rpe || si3.riso || si3.ableit || si3.geraet){
+      html += `<div class="d-section"><h3>Sicherheitsprüfung nach Instandsetzung</h3><div class="d-checklist">
+        Ergebnis: <b>${io(state.sicherheit3)}</b> ·
+        R<sub>PE</sub>: <b>${si3.rpe !== '' && si3.rpe != null ? esc(si3.rpe) + ' Ω' : '–'}</b> ·
+        R<sub>ISO</sub>: <b>${si3.riso !== '' && si3.riso != null ? esc(si3.riso) + ' MΩ' : '–'}</b> ·
+        Schutzleiter-/Berührungsstrom: <b>${si3.ableit !== '' && si3.ableit != null ? esc(si3.ableit) + ' mA' : '–'}</b> ·
+        Prüfgerät: <b>${esc(si3.geraet) || '–'}</b>
+      </div></div>`;
+    }
+    const mw3 = d.messwerte3 || {};
+    const mw3Ids = Object.keys(mw3).filter(k => String(mw3[k] ?? '').trim() !== '');
+    if(mw3Ids.length){
+      const nm = id => { const e = (CONFIG.messgroessen || []).find(x => x.id === id); return e ? e.name + (e.einheit ? ' [' + e.einheit + ']' : '') : id; };
+      html += `<div class="d-section"><h3>Messwerte nach Instandsetzung</h3><div class="d-checklist">${mw3Ids.map(id => esc(nm(id)) + ': <b>' + esc(mw3[id]) + '</b>').join(' · ')}</div></div>`;
     }
 
     const staffZeilen = Object.keys(staff).map(k=>{
@@ -249,6 +324,10 @@
       if(!s || (!s.mitarbeiter && !s.minuten)) return '';
       return `${k.replace('step','Schritt ')}: ${esc(s.mitarbeiter || '–')} – ${esc(s.minuten || 0)} Min.`;
     }).filter(Boolean);
+    const ze = d.zeitenExtra || {};
+    Object.keys(ze).sort().forEach(step => (ze[step] || []).forEach(z => {
+      staffZeilen.push(`Schritt ${esc(step)} (weitere): ${esc(z.mitarbeiter || '–')} – ${esc(z.minuten || 0)} Min.${z.durchlauf ? ' (' + esc(z.durchlauf) + '. Durchlauf)' : ''}`);
+    }));
     if(staffZeilen.length){
       html += `<div class="d-section"><h3>Mitarbeiter &amp; Arbeitszeit</h3><div class="d-checklist">${staffZeilen.join('<br>')}</div></div>`;
     }

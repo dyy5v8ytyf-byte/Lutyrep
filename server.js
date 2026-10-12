@@ -26,7 +26,12 @@ function sicherVergleichen(a, b) {
   if (bufA.length !== bufB.length) return false;
   return crypto.timingSafeEqual(bufA, bufB);
 }
+// Bearbeitungs-/Testmodus: LUTYREP_AUTH=off schaltet den Passwortschutz ab - NUR für
+// lokale Entwicklung gedacht, niemals auf der öffentlichen Railway-Instanz setzen.
+const AUTH_AUS = String(process.env.LUTYREP_AUTH || '').toLowerCase() === 'off';
+if (AUTH_AUS) console.warn('WARNUNG: Passwortschutz ist AUS (LUTYREP_AUTH=off) - nur lokal verwenden!');
 app.use((req, res, next) => {
+  if (AUTH_AUS) return next();
   const auth = req.headers.authorization || '';
   const [scheme, encoded] = auth.split(' ');
   if (scheme === 'Basic' && encoded) {
@@ -79,7 +84,9 @@ app.post('/api/lager', (req, res) => {
 
 app.put('/api/lager/:id', (req, res) => {
   const { bestand, ekPreis, vkPreis } = req.body;
-  const result = db.putLager(req.params.id, bestand, ekPreis, vkPreis);
+  // mindestbestand nur übergeben, wenn im Request enthalten (null = Überwachung aus)
+  const mindestbestand = Object.prototype.hasOwnProperty.call(req.body, 'mindestbestand') ? req.body.mindestbestand : undefined;
+  const result = db.putLager(req.params.id, bestand, ekPreis, vkPreis, mindestbestand);
   if (!result) return res.status(404).json({ error: 'Artikel nicht gefunden' });
   res.json(result);
 });
@@ -89,6 +96,46 @@ app.put('/api/lager/:id', (req, res) => {
 app.post('/api/lager/import', (req, res) => {
   const rows = Array.isArray(req.body.rows) ? req.body.rows : [];
   res.json(db.importLager(rows));
+});
+
+// Bestandsbuchung als Differenz (Entnahme/Rückbuchung aus einem Auftrag), mit Journal
+app.post('/api/lager/:id/buchung', (req, res) => {
+  const delta = Number(req.body.delta);
+  if (!Number.isFinite(delta) || delta === 0) return res.status(400).json({ error: 'delta ungültig' });
+  const r = db.bucheLager(req.params.id, delta, { auftragId: req.body.auftragId, grund: req.body.grund });
+  if (!r) return res.status(404).json({ error: 'Artikel nicht gefunden' });
+  res.json(r);
+});
+app.get('/api/lagerbewegungen', (req, res) => {
+  res.json(db.getLagerbewegungen(req.query.artikel));
+});
+app.get('/api/reservierungen', (req, res) => {
+  res.json(db.getReservierungen());
+});
+
+// Bestellbedarf (Artikel mit Mindestbestand, die ihn erreicht/unterschritten haben)
+app.get('/api/bestellbedarf', (req, res) => {
+  res.json(db.getBestellbedarf());
+});
+
+// ---------- Einstellungen (Messgrößen / Fehlerkategorien) ----------
+app.get('/api/config', (req, res) => {
+  res.json(db.getConfig());
+});
+// Stundensatz (netto) muss VOR der allgemeinen /:liste-Route stehen
+app.put('/api/config/stundensatz', (req, res) => {
+  if (!db.setStundensatz(req.body.wert)) return res.status(400).json({ error: 'ungültiger Stundensatz' });
+  res.json({ ok: true, stundensatz: db.getConfig().stundensatz });
+});
+app.post('/api/config/:liste', (req, res) => {
+  const e = db.addConfigEintrag(req.params.liste, req.body.name, req.body.einheit);
+  if (!e) return res.status(400).json({ error: 'ungültig oder bereits vorhanden' });
+  res.json(e);
+});
+app.put('/api/config/:liste/:id', (req, res) => {
+  const ok = db.setConfigAktiv(req.params.liste, req.params.id, req.body.aktiv);
+  if (!ok) return res.status(404).json({ error: 'nicht gefunden' });
+  res.json({ ok: true });
 });
 
 // ---------- Memory (Fehlerbeschreibungen, Komponenten, Arbeitszeiten) ----------
@@ -128,8 +175,27 @@ app.put('/api/auftraege/:id', (req, res) => {
   res.json({ ok: true });
 });
 
+// "Löschen" verschiebt den Auftrag in den Papierkorb - er bleibt vollständig erhalten.
+// Sicherungskopie eines Auftrags in den Papierkorb (vor "Auftrag zurücksetzen")
+app.post('/api/auftraege/:id/sicherung', (req, res) => {
+  const neueId = db.sichereAuftragKopie(req.params.id, req.body && req.body.grund);
+  if (!neueId) return res.status(404).json({ error: 'nicht gefunden' });
+  res.json({ ok: true, kopieId: neueId });
+});
+
 app.delete('/api/auftraege/:id', (req, res) => {
-  db.deleteAuftrag(req.params.id);
+  const ok = db.deleteAuftrag(req.params.id);
+  if (!ok) return res.status(404).json({ error: 'nicht gefunden' });
+  res.json({ ok: true });
+});
+
+// ---------- Papierkorb ----------
+app.get('/api/papierkorb', (req, res) => {
+  res.json(db.listPapierkorb());
+});
+app.post('/api/papierkorb/:id/wiederherstellen', (req, res) => {
+  const ok = db.restoreAuftrag(req.params.id);
+  if (!ok) return res.status(404).json({ error: 'nicht gefunden' });
   res.json({ ok: true });
 });
 

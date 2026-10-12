@@ -291,6 +291,63 @@
     .toggle-group button, .seg button{font-size:.85rem;}
     .parts-list .row{flex-wrap:wrap;gap:4px 10px;}
   }
+  /* Update 10/2026: Defekte Komponenten beim Eingang */
+  .defekt-hint{display:none;font-size:.8rem;color:#a13a3a;margin-top:4px;}
+  .defekt-hint.show{display:block;}
+  /* Update 10/2026: Schritt 2 - Sicherheitsprüfung, Ergebnisse, Freigabe-Nachweis, Kategorien/Messwerte */
+  .result-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:4px 0 8px 32px;}
+  .result-row .name{font-size:.85rem;color:var(--muted);min-width:150px;}
+  .toggle-group.io button{padding:5px 14px;font-size:.8rem;}
+  .safety{background:#fff6f0;border:1px solid #f0c9a8;border-radius:9px;padding:12px 14px;margin:8px 0;}
+  .safety .q{font-weight:700;font-size:.9rem;color:#8a3d0f;margin-bottom:4px;}
+  .safety-note{font-size:.78rem;color:var(--muted);margin-bottom:8px;}
+  .safety-grid,.freigabe-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;}
+  .safety-grid label,.freigabe-grid label,.mess-grid label{display:block;font-size:.75rem;color:var(--muted);margin-bottom:3px;}
+  .safety-grid input,.safety-grid select,.freigabe-grid input,.freigabe-grid select,.mess-grid input{width:100%;border:1px solid var(--border);border-radius:7px;padding:7px 9px;font-size:.88rem;font-family:inherit;background:#fff;}
+  .safety .result-row{padding-left:0;}
+  .final-banner.danger{background:#fdeeee;border:1px solid #f0b8b8;color:#a13a3a;}
+  #banner-sicherheit-nio{display:none;margin-top:8px;}
+  #banner-sicherheit-nio.show{display:block;}
+  .safety-missing{display:none;font-size:.8rem;color:#8a5c0f;margin-top:6px;}
+  .safety-missing.show{display:block;}
+  .item input[type=checkbox]:disabled + label{color:#aab3bd;cursor:not-allowed;}
+  .freigabe-grid{margin-top:10px;}
+  .freigabe-missing{font-size:.8rem;color:#a13a3a;margin-top:6px;}
+  .struct-block{background:#f7f9fc;border:1px dashed var(--border);border-radius:9px;padding:12px 14px;margin:8px 0;}
+  .struct-title{font-weight:700;font-size:.85rem;color:var(--navy);margin-bottom:6px;}
+  .struct-sub{font-weight:400;color:var(--muted);font-size:.75rem;}
+  .struct-empty{font-size:.8rem;color:var(--muted);}
+  .struct-empty a{color:var(--navy);}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;}
+  .chip{border:1px solid var(--border);background:#fff;border-radius:16px;padding:5px 12px;font-size:.8rem;cursor:pointer;font-family:inherit;}
+  .chip.on{background:var(--navy);color:#fff;border-color:var(--navy);}
+  .mess-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;}
+  /* Update 10/2026: Schritt 3 - Reservierung/Buchung, Zeiten, Sicherheitsprüfung nach Instandsetzung */
+  .parts-note{font-size:.78rem;color:var(--muted);margin:4px 0 6px;}
+  .p-badge{display:inline-block;font-size:.7rem;font-weight:700;border-radius:10px;padding:1px 8px;margin-left:6px;vertical-align:middle;}
+  .p-res{background:#eef2f7;color:var(--navy);}
+  .p-geb{background:#e5f6ec;color:#1f7a48;}
+  .p-fehl{background:#fdeeee;color:#a13a3a;}
+  .zeit-extra{margin-top:8px;font-size:.82rem;}
+  .zeit-extra .z-list div{display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px dashed var(--border);}
+  .zeit-extra .z-list button{border:none;background:none;color:var(--red);cursor:pointer;font-size:.8rem;}
+  .zeit-extra .z-add{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;align-items:center;}
+  .zeit-extra .z-add select,.zeit-extra .z-add input{border:1px solid var(--border);border-radius:6px;padding:5px 7px;font-size:.82rem;font-family:inherit;}
+  .zeit-extra .z-add input{width:90px;}
+  .zeit-extra .z-add button{border:1px solid var(--navy);background:#fff;color:var(--navy);border-radius:6px;padding:5px 10px;font-size:.8rem;cursor:pointer;}
+  .zeit-extra .z-title{color:var(--muted);font-size:.75rem;text-transform:uppercase;letter-spacing:.03em;}
+  /* Update 10/2026: Schritt 4 - Endkontrolle, Vollständigkeit, Versand, Abschluss */
+  .ref-box{background:#f7f9fc;border:1px dashed var(--border);border-radius:8px;padding:8px 12px;margin:2px 0 6px 32px;font-size:.82rem;}
+  .ref-title{color:var(--muted);font-size:.75rem;text-transform:uppercase;letter-spacing:.03em;}
+  .ref-text{white-space:pre-wrap;}
+  .versand{background:#f2f6fb;border:1px solid var(--border);border-radius:9px;padding:12px 14px;margin:8px 0;}
+  .versand .q{font-weight:700;font-size:.9rem;color:var(--navy);margin-bottom:6px;}
+  .abschluss-check{font-size:.82rem;margin-top:10px;padding:10px 12px;border-radius:8px;display:none;}
+  .abschluss-check.offen{display:block;background:#fbf7ee;border:1px solid #ecd9ad;color:#7a5a12;}
+  .abschluss-check.bereit{display:block;background:#eef7f0;border:1px solid #bfe3c8;color:#1f7a48;}
+  .abschluss-check ul{margin:4px 0 0;padding-left:18px;}
+  .toolbar{flex-wrap:wrap;}
+  @media print{ .abschluss-check{display:none!important;} }
 </style>
 </head>
 <body>
@@ -361,6 +418,24 @@
           <textarea rows="2" id="ta_komponenten_eingang" placeholder="Mitgelieferte Komponenten (Kabel, Schallkopf, Sonotroden, Al-Koffer, sonstiges...)"></textarea>
         </div>
       </div>
+      <div class="decision">
+        <div class="q">Defekte Komponenten?</div>
+        <div class="toggle-group" data-group="defekt">
+          <button data-val="ja" type="button">Ja</button>
+          <button data-val="nein" type="button">Nein</button>
+        </div>
+        <div class="branch" id="branch-defekt-ja">
+          <label style="font-weight:600;" for="ta_defekt_komponenten">Beschreibung der defekten Komponenten</label>
+          <textarea rows="2" class="item-full" id="ta_defekt_komponenten" placeholder="Welche Komponente, welcher Schaden (z. B. HF-Kabel Stecker abgerissen, Koffer Scharnier gebrochen)..."></textarea>
+          <div class="defekt-hint" id="defektHint">Bitte die defekten Komponenten kurz beschreiben.</div>
+          <div class="photo-upload-row" style="margin-top:8px;">
+            <input type="file" id="defektFotoInput" accept="image/*" multiple style="display:none;">
+            <label class="btn-photo" id="defektFotoAddBtn" for="defektFotoInput">📷 Foto Defekt hinzufügen</label>
+            <span class="photo-hint" id="defektFotoHint">0 / 2 Fotos</span>
+          </div>
+          <div class="photo-thumbs" id="defektFotoThumbs"></div>
+        </div>
+      </div>
       <div class="item">
         <input type="checkbox" id="c1c"><label for="c1c">c) Seriennummer, WAWI-Nr. und Komponenten erfasst (siehe Kopfdaten oben)</label>
       </div>
@@ -381,13 +456,64 @@
     <div class="card-body">
       <div class="item"><input type="checkbox" id="c2a"><label for="c2a">Gerät säubern</label></div>
       <div class="item"><input type="checkbox" id="c2b"><label for="c2b">Sichtprüfung</label></div>
+      <div class="result-row">
+        <span class="name">Ergebnis Sichtprüfung</span>
+        <div class="toggle-group io" data-group="sichtpruefung">
+          <button data-val="ja" type="button">i.O.</button>
+          <button data-val="nein" type="button">n.i.O.</button>
+        </div>
+      </div>
+
+      <!-- Sicherheitsprüfung vor Inbetriebnahme (S2-1) -->
+      <div class="safety">
+        <div class="q">⚡ Elektrische Sicherheitsprüfung vor Inbetriebnahme</div>
+        <div class="safety-note">Vor dem ersten Betrieb unter Spannung messen. Grenzwerte je nach Schutzklasse/Gerät gemäß Vorgabe der verantwortlichen Elektrofachkraft.</div>
+        <div class="safety-grid">
+          <div><label for="si_schutzklasse">Schutzklasse</label>
+            <select id="si_schutzklasse" class="si-field">
+              <option value="">-- auswählen --</option>
+              <option value="I">SK I (Schutzleiter)</option>
+              <option value="II">SK II (schutzisoliert)</option>
+              <option value="III">SK III (Schutzkleinspannung)</option>
+            </select></div>
+          <div id="si_rpe_wrap"><label for="si_rpe">Schutzleiterwiderstand R<sub>PE</sub> [Ω]</label><input type="number" step="0.001" min="0" id="si_rpe" class="si-field" placeholder="z. B. 0,08"></div>
+          <div><label for="si_riso">Isolationswiderstand R<sub>ISO</sub> [MΩ]</label><input type="number" step="0.01" min="0" id="si_riso" class="si-field" placeholder="z. B. 50"></div>
+          <div><label for="si_geraet">Prüfgerät</label><input type="text" id="si_geraet" class="si-field" placeholder="Typ / Inventar-Nr."></div>
+        </div>
+        <div class="result-row" style="margin-top:8px;">
+          <span class="name"><b>Sicherheitsprüfung bestanden?</b></span>
+          <div class="toggle-group io" data-group="sicherheit2">
+            <button data-val="ja" type="button">i.O.</button>
+            <button data-val="nein" type="button">n.i.O.</button>
+          </div>
+        </div>
+        <div class="final-banner danger" id="banner-sicherheit-nio">⛔ Sicherheitsprüfung nicht bestanden – Gerät NICHT unter Spannung in Betrieb nehmen. Befund unten in der Fehlerbeschreibung festhalten.</div>
+        <div class="safety-missing" id="sicherheitHint">Funktionstest unter Spannung ist erst nach bestandener Sicherheitsprüfung (i.O.) freigegeben.</div>
+      </div>
+
       <div class="item"><input type="checkbox" id="c2c"><label for="c2c">Funktionstest unter Spannung</label></div>
+      <div class="result-row">
+        <span class="name">Ergebnis Funktionstest</span>
+        <div class="toggle-group io" data-group="funktionstest">
+          <button data-val="ja" type="button">i.O.</button>
+          <button data-val="nein" type="button">n.i.O.</button>
+        </div>
+      </div>
       <div class="item">
         <input type="checkbox" id="c2d">
         <div class="item-full">
           <label for="c2d">Bericht / Checkliste – Fehlerbeschreibung (Techniker)</label>
           <textarea rows="2" id="ta_fehler_techniker" placeholder="Festgestellte Fehler / Befund..."></textarea>
         </div>
+      </div>
+
+      <!-- Vorbereitet für Fehlerbild-/Mustererkennung (S2-3 / S2-4): Listen werden unter
+           "Einstellungen" gepflegt - solange sie leer sind, erscheint nur ein Hinweis. -->
+      <div class="struct-block">
+        <div class="struct-title">Fehlerkategorie <span class="struct-sub">(Mehrfachauswahl)</span></div>
+        <div class="chips" id="fehlerKatChips"></div>
+        <div class="struct-title" style="margin-top:12px;">Messwerte</div>
+        <div class="mess-grid" id="messwerteGrid"></div>
       </div>
 
       <div class="decision">
@@ -401,7 +527,18 @@
         </div>
         <div class="branch" id="branch-kv-ja">
           Freigabe Kunde wie gehabt: Weiter zu Schritt 3, dort wird der KV aus Fehlerbild, Ersatzteilen und Arbeitszeit erstellt.
-          <div class="kv-amount">KV-Betrag: <b id="kvBetragAnzeige">– noch nicht erstellt –</b></div>
+          <div class="kv-amount">KV-Betrag (netto): <b id="kvBetragAnzeige">– noch nicht erstellt –</b></div>
+          <div class="kv-amount" id="kvFreigegebenZeile" style="display:none;">Vom Kunden freigegeben: <b id="kvFreigegebenAnzeige"></b></div>
+          <div class="freigabe-grid">
+            <div><label for="fg_datum">Freigabe am</label><input type="date" id="fg_datum" class="fg-field"></div>
+            <div><label for="fg_art">Art der Freigabe</label>
+              <select id="fg_art" class="fg-field">
+                <option value="">-- auswählen --</option>
+                <option>E-Mail</option><option>schriftlich / Fax</option><option>Telefon</option><option>persönlich</option>
+              </select></div>
+            <div><label for="fg_von">Entgegengenommen von</label><select id="fg_von" class="fg-field staff-like"><option value="">-- auswählen --</option></select></div>
+            <div><label for="fg_notiz">Ansprechpartner / Notiz</label><input type="text" id="fg_notiz" class="fg-field" placeholder="z. B. Hr. Meier, Mail vom ..."></div>
+          </div>
           <div class="kv-gate" style="margin-top:10px;">
             <input type="checkbox" id="freigabeErhalten">
             <label for="freigabeErhalten">Freigabe des Kunden erhalten → schaltet endgültige Instandsetzung frei</label>
@@ -449,6 +586,7 @@
         <div class="parts-list" id="partsList"></div>
       </div>
 
+      <div class="parts-note">Eingeplante Teile werden zunächst nur <b>reserviert</b>. Abgebucht wird erst, wenn in der endgültigen Instandsetzung „Komponenten ausgetauscht" abgehakt ist.</div>
       <div class="item"><input type="checkbox" id="c3d"><label for="c3d">Lagerbestand geprüft, angepasst und aktuell gehalten</label></div>
 
       <div class="subhead">Endgültige Instandsetzung</div>
@@ -463,6 +601,29 @@
         <div class="test-row">
           <span class="name">Standardkopf – Reset</span>
           <div class="seg" data-testgroup="reset"><button data-val="ok" type="button">i.O.</button><button data-val="bad" type="button">n.i.O.</button></div>
+        </div>
+
+        <div class="struct-block" id="mess3Block">
+          <div class="struct-title">Messwerte nach Instandsetzung</div>
+          <div class="mess-grid" id="messwerte3Grid"></div>
+        </div>
+
+        <div class="safety">
+          <div class="q">⚡ Sicherheitsprüfung nach Instandsetzung (vor Rückgabe an den Kunden)</div>
+          <div class="safety-note">Prüfung nach DIN EN 50678 (VDE 0701) nach jedem Eingriff. Grenzwerte gemäß Vorgabe der verantwortlichen Elektrofachkraft. Schutzklasse aus Schritt 2: <b id="si3_sk_text">–</b></div>
+          <div class="safety-grid">
+            <div id="si3_rpe_wrap"><label for="si3_rpe">Schutzleiterwiderstand R<sub>PE</sub> [Ω]</label><input type="number" step="0.001" min="0" id="si3_rpe" placeholder="z. B. 0,08"></div>
+            <div><label for="si3_riso">Isolationswiderstand R<sub>ISO</sub> [MΩ]</label><input type="number" step="0.01" min="0" id="si3_riso" placeholder="z. B. 50"></div>
+            <div><label for="si3_ableit">Schutzleiter-/Berührungsstrom [mA]</label><input type="number" step="0.01" min="0" id="si3_ableit" placeholder="optional"></div>
+            <div><label for="si3_geraet">Prüfgerät</label><input type="text" id="si3_geraet" placeholder="Typ / Inventar-Nr."></div>
+          </div>
+          <div class="result-row" style="margin-top:8px;">
+            <span class="name"><b>Sicherheitsprüfung bestanden?</b></span>
+            <div class="toggle-group io" data-group="sicherheit3">
+              <button data-val="ja" type="button">i.O.</button>
+              <button data-val="nein" type="button">n.i.O.</button>
+            </div>
+          </div>
         </div>
 
         <div class="decision" style="margin-top:14px;">
@@ -499,9 +660,50 @@
     <div class="card-head"><div class="step-num">4</div><h2>Endkontrolle Halle &amp; Versand</h2></div>
     <div class="card-body">
       <div class="item"><input type="checkbox" id="c4a"><label for="c4a">Sichtkontrolle / Endkontrolle in der Halle</label></div>
+      <div class="result-row">
+        <span class="name">Ergebnis Endkontrolle</span>
+        <div class="toggle-group io" data-group="endkontrolle">
+          <button data-val="ja" type="button">i.O.</button>
+          <button data-val="nein" type="button">n.i.O.</button>
+        </div>
+      </div>
       <div class="item"><input type="checkbox" id="c4b"><label for="c4b">Vollständigkeit Zubehör &amp; Komponenten geprüft</label></div>
+      <div class="ref-box">
+        <div class="ref-title">Beim Eingang erfasst (Schritt 1):</div>
+        <div id="ref_komponenten" class="ref-text">–</div>
+        <div id="ref_defekt_wrap" style="display:none;"><div class="ref-title" style="margin-top:6px;">Defekte Komponenten beim Eingang:</div><div id="ref_defekt" class="ref-text"></div></div>
+      </div>
+      <div class="decision">
+        <div class="q">Alles vollständig, was beim Eingang erfasst wurde?</div>
+        <div class="toggle-group" data-group="vollstaendig">
+          <button data-val="ja" type="button">Ja</button>
+          <button data-val="nein" type="button">Nein</button>
+        </div>
+        <div class="branch" id="branch-vollstaendig-nein">
+          <label style="font-weight:600;" for="ta_abweichung_komponenten">Abweichung (was fehlt / was ist anders – mit Begründung)</label>
+          <textarea rows="2" class="item-full" id="ta_abweichung_komponenten" placeholder="z. B. Koffer beim Kunden verblieben, laut Telefonat vom ..."></textarea>
+        </div>
+      </div>
       <div class="item"><input type="checkbox" id="c4c"><label for="c4c">Verpackt &amp; versandfertig</label></div>
-      <div class="item"><input type="checkbox" id="c4d"><label for="c4d"><strong>Versand durchgeführt</strong></label></div>
+
+      <div class="versand">
+        <div class="q">📦 Versand</div>
+        <div class="freigabe-grid">
+          <div><label for="v_datum">Versanddatum</label><input type="date" id="v_datum" class="v-field"></div>
+          <div><label for="v_art">Versandart</label>
+            <select id="v_art" class="v-field">
+              <option value="">-- auswählen --</option>
+              <option>DHL Paket</option><option>UPS</option><option>DPD</option><option>GLS</option>
+              <option>Spedition</option><option>Kurier</option><option>Abholung durch Kunden</option><option>Sonstige</option>
+            </select></div>
+          <div><label for="v_sendungsnr">Sendungs-/Trackingnummer</label><input type="text" id="v_sendungsnr" class="v-field"></div>
+          <div><label for="v_lieferschein">Lieferschein-Nr.</label><input type="text" id="v_lieferschein" class="v-field"></div>
+          <div><label for="v_rechnung">Rechnungs-Nr.</label><input type="text" id="v_rechnung" class="v-field"></div>
+        </div>
+      </div>
+
+      <div class="item"><input type="checkbox" id="c4d" disabled><label for="c4d"><strong>Versand durchgeführt / Auftrag abgeschlossen</strong> <span style="color:var(--muted);font-weight:400;font-size:.8rem;">(wird über „Auftrag abschließen &amp; archivieren" gesetzt)</span></label></div>
+      <div class="abschluss-check" id="abschlussCheck"></div>
 
       <div class="final-banner ok" id="banner-shipped">✅ Gerät versendet – Auftrag abgeschlossen</div>
 
@@ -512,11 +714,13 @@
     </div>
   </div>
 
-  <p class="note">Mitarbeiter, Fehlerbeschreibungen, Komponenten, Arbeitszeiten sowie Ersatzteil- und Preisangaben werden zentral auf dem Server gespeichert und stehen als Auswahl (Dropdown) allen Nutzern für spätere Aufträge zur Verfügung. Stundenlohn Reparatur: 120&nbsp;€/Std. Der Lagerbestand ist zentral (Menü „Lagerbestand verwalten") und wird hier live angepasst.</p>
+  <p class="note">Mitarbeiter, Fehlerbeschreibungen, Komponenten, Arbeitszeiten sowie Ersatzteil- und Preisangaben werden zentral auf dem Server gespeichert und stehen als Auswahl (Dropdown) allen Nutzern für spätere Aufträge zur Verfügung. Stundensatz Reparatur: <span id="noteSatz">120,00&nbsp;€</span>/Std. netto (änderbar unter Einstellungen). Der Lagerbestand ist zentral (Menü „Lagerbestand verwalten") und wird hier live angepasst.</p>
 
   <div class="toolbar">
     <button class="btn-reset" id="resetBtn" type="button">Auftrag zurücksetzen</button>
-    <button class="btn-print" id="printBtn" type="button">Auftrag abschließen &amp; drucken</button>
+    <button class="btn-reset" id="internPrintBtn" type="button">🖨 Interne Checkliste drucken</button>
+    <button class="btn-reset" id="protokollBtn" type="button">📄 Kunden-Prüfprotokoll</button>
+    <button class="btn-print" id="printBtn" type="button">✔ Auftrag abschließen &amp; archivieren</button>
   </div>
 </div>
 
@@ -555,17 +759,29 @@
     showJsErrors();
   });
 
-  const STUNDENLOHN = 120; // €/Std.
+  // Stundensatz (netto) kommt aus den Einstellungen; 120 nur als Rückfallwert
+  function stundensatz(){ return Number(CONFIG.stundensatz) > 0 ? Number(CONFIG.stundensatz) : 120; }
   const params = new URLSearchParams(location.search);
   const auftragId = params.get('id');
   if(!auftragId){ location.href = 'index.html'; return; }
 
-  const state = { vorabinfo:null, kvDecision:null, freigabeErhalten:false, testok:null, kvBetrag:0 };
+  const state = { vorabinfo:null, defekt:null, sichtpruefung:null, sicherheit2:null, funktionstest:null, kvDecision:null, freigabeErhalten:false, sicherheit3:null, testok:null, endkontrolle:null, vollstaendig:null, kvBetrag:0, kvFreigegeben:null, kvFreigegebenAm:null, kvStundensatz:null };
   let ewLoops = 0;
   let mitarbeiterListe = [];
   let ersatzteile = [];
   let fotos = []; // Wareneingang-Fotos, als komprimierte Base64-Bilder (max. 3)
   const FOTOS_MAX = 3;
+  let sicherheit = { schutzklasse:'', rpe:'', riso:'', geraet:'' }; // Messwerte Sicherheitsprüfung Schritt 2
+  let freigabe = { datum:'', art:'', von:'', notiz:'' };              // Nachweis Kundenfreigabe
+  let fehlerkategorien = [];  // gewählte Kategorie-IDs (Liste aus Einstellungen)
+  let messwerte = {};         // { messgroessenId: Wert }
+  let CONFIG = { messgroessen: [], fehlerkategorien: [], stundensatz: 120 };
+  let sicherheit3 = { rpe:'', riso:'', ableit:'', geraet:'' }; // Prüfung nach Instandsetzung
+  let messwerte3 = {};        // Messwerte nach Instandsetzung
+  let zeitenExtra = {};
+  let versand = { datum:'', art:'', sendungsnr:'', lieferschein:'', rechnung:'' };       // { '1': [{mitarbeiter, minuten, datum}], ... } weitere Zeiteinträge je Schritt
+  let defektFotos = []; // Fotos der defekten Komponenten beim Eingang (max. 2)
+  const DEFEKT_FOTOS_MAX = 2;
   let LAGER_DB = {};
   let MEMORY = { fehler_kunde: [], fehler_techniker: [], fehlerbild_ruecklauf: [], komponenten_eingang: [], austausch_komponenten: [], arbeitszeiten: [] };
   let testSeg = { schall:null, reset:null };
@@ -730,13 +946,21 @@
     const selects = document.querySelectorAll('.staff-select');
     selects.forEach(sel=>{
       const current = sel.value;
-      sel.innerHTML = '<option value="">-- auswählen --</option>' + mitarbeiterListe.map(n=>`<option value="${n}">${n}</option>`).join('');
+      sel.innerHTML = '<option value="">-- auswählen --</option>' + mitarbeiterListe.map(n=>`<option value="${escH(n)}">${escH(n)}</option>`).join('');
       if(mitarbeiterListe.includes(current)) sel.value = current;
     });
+    const fgVon = document.getElementById('fg_von');
+    if(fgVon){
+      const cur = freigabe.von || fgVon.value;
+      fgVon.innerHTML = '<option value="">-- auswählen --</option>' + mitarbeiterListe.map(n=>`<option value="${escH(n)}">${escH(n)}</option>`).join('');
+      if(cur && !mitarbeiterListe.includes(cur)) fgVon.insertAdjacentHTML('beforeend', `<option value="${escH(cur)}">${escH(cur)}</option>`);
+      fgVon.value = cur || '';
+    }
     const listEl = document.getElementById('rosterList');
     listEl.innerHTML = mitarbeiterListe.length
-      ? mitarbeiterListe.map(n=>`<span>${n}</span>`).join('')
+      ? mitarbeiterListe.map(n=>`<span>${escH(n)}</span>`).join('')
       : 'Noch keine Mitarbeiter erfasst – oben eintragen, danach in jedem Schritt auswählbar.';
+    if(document.querySelector('.zeit-extra')) renderZeitenExtra();
   }
 
   section('Mitarbeiter-Erfassung', ()=>{
@@ -829,6 +1053,55 @@
     });
   });
 
+  // ---- Fotos defekter Komponenten (Schritt 1, nur bei "Defekte Komponenten? Ja", max. 2) ----
+  function renderDefektFotos(){
+    const wrap = document.getElementById('defektFotoThumbs');
+    const hint = document.getElementById('defektFotoHint');
+    const addBtn = document.getElementById('defektFotoAddBtn');
+    if(!wrap) return;
+    wrap.innerHTML = defektFotos.map((src, i) =>
+      `<div class="photo-thumb"><img src="${src}" alt="Defekt-Foto ${i+1}"><button type="button" class="photo-remove" data-i="${i}">×</button></div>`
+    ).join('');
+    wrap.querySelectorAll('.photo-remove').forEach(b=>{
+      b.addEventListener('click', ()=>{
+        defektFotos.splice(Number(b.dataset.i), 1);
+        renderDefektFotos();
+        scheduleSave();
+      });
+    });
+    if(hint) hint.textContent = defektFotos.length + ' / ' + DEFEKT_FOTOS_MAX + ' Fotos';
+    if(addBtn) addBtn.classList.toggle('is-disabled', defektFotos.length >= DEFEKT_FOTOS_MAX);
+  }
+  function updateDefektHint(){
+    const ta = document.getElementById('ta_defekt_komponenten');
+    const h = document.getElementById('defektHint');
+    if(h && ta) h.classList.toggle('show', state.defekt === 'ja' && !ta.value.trim());
+  }
+
+  section('Defekt-Fotos', ()=>{
+    document.getElementById('defektFotoInput').addEventListener('change', async (e)=>{
+      const files = Array.from(e.target.files || []);
+      e.target.value = '';
+      if(!files.length) return;
+      const platzFrei = DEFEKT_FOTOS_MAX - defektFotos.length;
+      if(platzFrei <= 0){
+        await showModal({ message: 'Es sind bereits ' + DEFEKT_FOTOS_MAX + ' Fotos der defekten Komponenten hinzugefügt. Bitte zuerst ein Foto entfernen.' });
+        return;
+      }
+      const zuVerarbeiten = files.slice(0, platzFrei);
+      if(files.length > platzFrei){
+        await showModal({ message: 'Es sind maximal ' + DEFEKT_FOTOS_MAX + ' Fotos der defekten Komponenten erlaubt. Nur die ersten ' + zuVerarbeiten.length + ' werden übernommen.' });
+      }
+      for(const file of zuVerarbeiten){
+        try { defektFotos.push(await komprimiereBild(file)); }
+        catch(err){ jsErrors.push('Defekt-Foto verarbeiten: ' + (err && err.message ? err.message : err)); showJsErrors(); }
+      }
+      renderDefektFotos();
+      scheduleSave();
+    });
+    document.getElementById('ta_defekt_komponenten').addEventListener('input', updateDefektHint);
+  });
+
   // ---- Ersatzteile / Lagerabgleich (zentral) ----
   // Jeder Artikel hat eine eindeutige ID (Artikelnummer aus dem ERP-Import, oder "M<n>" für
   // manuell angelegte Teile ohne Artikelnummer) - Namen allein reichen nicht als Kennzeichen,
@@ -894,17 +1167,55 @@
 
   function renderParts(){
     const el = document.getElementById('partsList');
-    el.innerHTML = ersatzteile.map((p, i)=>
-      `<div class="row"><span>${esc(p.name)}${p.nummer ? ' <span style="color:var(--muted);">[' + esc(p.nummer) + ']</span>' : ''} — Menge: ${p.qty} · VK: ${fmtEUR(p.vkPreis||0)} <span style="color:var(--muted);">(EK: ${fmtEUR(p.ekPreis||0)})</span></span><button data-i="${i}" type="button">entfernen</button></div>`
-    ).join('');
+    el.innerHTML = ersatzteile.map((p, i)=>{
+      const badge = p.gebucht === false
+        ? '<span class="p-badge p-res">reserviert</span>' + (p.fehltBeimEinplanen > 0 ? '<span class="p-badge p-fehl">fehlt ' + esc(p.fehltBeimEinplanen) + ' Stk</span>' : '')
+        : '<span class="p-badge p-geb">abgebucht</span>' + (p.fehlmengeBuchung > 0 ? '<span class="p-badge p-fehl">Lager zeigte ' + esc(p.fehlmengeBuchung) + ' zu wenig</span>' : '');
+      return `<div class="row"><span>${esc(p.name)}${p.nummer ? ' <span style="color:var(--muted);">[' + esc(p.nummer) + ']</span>' : ''} — Menge: ${esc(p.qty)} · VK: ${fmtEUR(p.vkPreis||0)} <span style="color:var(--muted);">(EK: ${fmtEUR(p.ekPreis||0)})</span>${badge}</span><button data-i="${i}" type="button">entfernen</button></div>`;
+    }).join('');
     el.querySelectorAll('button').forEach(b=>{
-      b.addEventListener('click', ()=>{
-        ersatzteile.splice(Number(b.dataset.i), 1);
+      b.addEventListener('click', async ()=>{
+        const idx = Number(b.dataset.i);
+        const p = ersatzteile[idx];
+        if(!p) return;
+        // Bereits abgebuchte Teile (auch Altaufträge) gehen beim Entfernen zurück ins Lager
+        if(p.gebucht !== false && p.id){
+          const ok = await showModal({ message: '"' + p.name + '" ist bereits vom Lager abgebucht. Entfernen und ' + p.qty + ' Stk zurück ins Lager buchen?', okText: 'Entfernen & zurückbuchen' });
+          if(!ok) return;
+          try {
+            const r = await apiPost('/api/lager/' + encodeURIComponent(p.id) + '/buchung', { delta: Number(p.qty) || 0, auftragId, grund: 'Rückbuchung: aus Auftrag entfernt' });
+            if(r && r.id && LAGER_DB[r.id]) LAGER_DB[r.id].bestand = r.bestand;
+          } catch(err){ jsErrors.push('Rückbuchung: ' + (err && err.message ? err.message : err)); showJsErrors(); return; }
+        }
+        ersatzteile.splice(idx, 1);
         renderParts();
+        refreshPartInfo();
         updateProgress();
-        scheduleSave();
+        scheduleSave(true);
       });
     });
+  }
+
+  // Abbuchung aller übergebenen, noch nicht gebuchten Teile (beim Austausch der Komponenten)
+  async function bucheTeile(liste){
+    const warnungen = [];
+    for(const p of liste){
+      if(p.gebucht !== false || !p.id) continue;
+      try {
+        const r = await apiPost('/api/lager/' + encodeURIComponent(p.id) + '/buchung', { delta: -(Number(p.qty) || 0), auftragId, grund: 'Entnahme: Komponenten ausgetauscht' });
+        p.gebucht = true;
+        p.gebuchtAm = new Date().toISOString();
+        p.fehlmengeBuchung = r && r.fehlmenge ? r.fehlmenge : 0;
+        if(r && r.id && LAGER_DB[r.id]) LAGER_DB[r.id].bestand = r.bestand;
+        if(p.fehlmengeBuchung > 0) warnungen.push(p.name + ': Lager zeigte ' + p.fehlmengeBuchung + ' Stk zu wenig');
+      } catch(err){ jsErrors.push('Abbuchung ' + p.name + ': ' + (err && err.message ? err.message : err)); showJsErrors(); }
+    }
+    renderParts();
+    refreshPartInfo();
+    scheduleSave(true);
+    if(warnungen.length){
+      await showModal({ message: '⚠️ Abgebucht, aber der Lagerbestand stimmte nicht: ' + warnungen.join('; ') + '. Bestand steht jetzt auf 0 – bitte Lager zählen und korrigieren.', cancelText: 'Schließen' });
+    }
   }
 
   async function parseEuroPrompt(message, defaultValue){
@@ -941,10 +1252,27 @@
         }
       }
 
-      part.bestand = Math.max(0, part.bestand - qty);
-      ersatzteile.push({ id: part.id, nummer: part.nummer, name: part.name, qty, ekPreis: part.ekPreis, vkPreis: part.vkPreis });
+      // Verfügbarkeit prüfen: Bestand minus Reservierungen anderer offener Aufträge minus
+      // bereits in diesem Auftrag eingeplante (noch nicht abgebuchte) Menge
+      let verfuegbar = Number(part.bestand) || 0;
+      try {
+        const frisch = await apiGet('/api/lager');
+        if(frisch[part.id]){ LAGER_DB[part.id] = frisch[part.id]; part.bestand = frisch[part.id].bestand; verfuegbar = Number(part.bestand) || 0; }
+        const res = await apiGet('/api/reservierungen');
+        const r = res[part.id];
+        if(r && r.jeAuftrag){ Object.keys(r.jeAuftrag).forEach(aid => { if(String(aid) !== String(auftragId)) verfuegbar -= r.jeAuftrag[aid]; }); }
+      } catch(_) {}
+      ersatzteile.filter(p => p.id === part.id && p.gebucht === false).forEach(p => { verfuegbar -= Number(p.qty) || 0; });
+      const fehlt = Math.max(0, qty - Math.max(0, verfuegbar));
 
-      await apiPut('/api/lager/' + encodeURIComponent(part.id), { bestand: part.bestand, ekPreis: part.ekPreis, vkPreis: part.vkPreis });
+      await apiPut('/api/lager/' + encodeURIComponent(part.id), { ekPreis: part.ekPreis, vkPreis: part.vkPreis });
+      const eintrag = { id: part.id, nummer: part.nummer, name: part.name, qty, ekPreis: part.ekPreis, vkPreis: part.vkPreis, gebucht: false, fehltBeimEinplanen: fehlt };
+      ersatzteile.push(eintrag);
+      // Ist der Austausch bereits erfolgt (Nachtrag in der Instandsetzung), sofort abbuchen
+      if(document.getElementById('c3f').checked) await bucheTeile([eintrag]);
+      if(fehlt > 0){
+        await showModal({ message: '⚠️ "' + name + '": ' + qty + ' Stk eingeplant, verfügbar sind nur ' + Math.max(0, verfuegbar) + ' Stk. Es fehlen ' + fehlt + ' Stk – das Teil erscheint auf der Übersicht als Bestellbedarf.', cancelText: 'Schließen' });
+      }
 
       partNameInp.value = '';
       selectedPart = null;
@@ -969,7 +1297,20 @@
     document.querySelectorAll('.toggle-group').forEach(g=>{
       const group = g.dataset.group;
       g.querySelectorAll('button').forEach(btn=>{
-        btn.addEventListener('click', ()=>{
+        btn.addEventListener('click', async ()=>{
+          // Plausibilität: "Test insgesamt i.O." nur, wenn Einzeltests und Sicherheitsprüfung passen
+          if(group === 'testok' && btn.dataset.val === 'ja' && state.testok !== 'ja'){
+            const gruende = [];
+            if(testSeg.schall === 'bad') gruende.push('Standardkopf – Schall ist n.i.O.');
+            if(testSeg.reset === 'bad') gruende.push('Standardkopf – Reset ist n.i.O.');
+            if(state.sicherheit3 !== 'ja') gruende.push('Sicherheitsprüfung nach Instandsetzung ist nicht als i.O. erfasst');
+            if(gruende.length){
+              await showModal({ message: '„Test insgesamt i.O." nicht möglich: ' + gruende.join('; ') + '.', cancelText: 'Schließen' });
+              return;
+            }
+          }
+          // Jeder Wechsel auf "nein" ist ein weiterer Instandsetzungs-Durchlauf
+          if(group === 'testok' && btn.dataset.val === 'nein' && state.testok !== 'nein') ewLoops++;
           setToggle(group, btn.dataset.val, btn);
           updateBranches();
           updateFlow();
@@ -1005,11 +1346,108 @@
   });
 
   section('Freigabe-Checkbox', ()=>{
-    document.getElementById('freigabeErhalten').addEventListener('change', (e)=>{
+    document.getElementById('freigabeErhalten').addEventListener('change', async (e)=>{
+      // Freigabe nur für einen tatsächlich erstellten Kostenvoranschlag (KV-Betrag vorhanden)
+      if(e.target.checked && !(Number(state.kvBetrag) > 0)){
+        e.target.checked = false;
+        await showModal({ message: 'Die Kundenfreigabe kann erst gesetzt werden, wenn der Kostenvoranschlag erstellt ist (Schritt 3, „Kostenvoranschlag erstellen").' });
+        return;
+      }
+      // Nachweis: Datum und Art der Freigabe müssen vor dem Freischalten eingetragen sein
+      if(e.target.checked && (!freigabe.datum || !freigabe.art)){
+        e.target.checked = false;
+        await showModal({ message: 'Bitte zuerst Datum und Art der Kundenfreigabe eintragen (Nachweis).' });
+        return;
+      }
       state.freigabeErhalten = e.target.checked;
+      if(e.target.checked){ state.kvFreigegeben = Number(state.kvBetrag) || 0; state.kvFreigegebenAm = new Date().toISOString(); }
+      else { state.kvFreigegeben = null; state.kvFreigegebenAm = null; }
+      zeigeFreigabeBetrag();
       updateFlow();
       updateProgress();
       scheduleSave();
+    });
+  });
+
+  // ---- Schritt 2: Sicherheitsprüfung, Freigabe-Nachweis, Fehlerkategorie, Messwerte ----
+  function escH(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  const SI_FELDER = { si_schutzklasse:'schutzklasse', si_rpe:'rpe', si_riso:'riso', si_geraet:'geraet' };
+  const FG_FELDER = { fg_datum:'datum', fg_art:'art', fg_von:'von', fg_notiz:'notiz' };
+  function sicherheitFelderAnzeigen(){
+    Object.entries(SI_FELDER).forEach(([id,k])=>{ const el=document.getElementById(id); if(el) el.value = sicherheit[k] || ''; });
+    Object.entries(FG_FELDER).forEach(([id,k])=>{ const el=document.getElementById(id); if(el) el.value = freigabe[k] || ''; });
+    // R_PE nur bei Schutzklasse I relevant
+    document.getElementById('si_rpe_wrap').style.display = (sicherheit.schutzklasse === 'II' || sicherheit.schutzklasse === 'III') ? 'none' : '';
+  }
+  // Funktionstest unter Spannung erst nach bestandener Sicherheitsprüfung. Bereits früher
+  // gesetzte Haken (Altaufträge vor diesem Update) bleiben unangetastet.
+  function updateSicherheit(){
+    const c2c = document.getElementById('c2c');
+    const ok = state.sicherheit2 === 'ja';
+    c2c.disabled = !ok && !c2c.checked;
+    document.getElementById('banner-sicherheit-nio').classList.toggle('show', state.sicherheit2 === 'nein');
+    document.getElementById('sicherheitHint').classList.toggle('show', !ok && !c2c.checked && state.sicherheit2 !== 'nein');
+  }
+  function renderStruktur(){
+    const chipWrap = document.getElementById('fehlerKatChips');
+    const kats = CONFIG.fehlerkategorien.filter(k => k.aktiv !== false || fehlerkategorien.includes(k.id));
+    chipWrap.innerHTML = kats.length
+      ? kats.map(k => `<button type="button" class="chip ${fehlerkategorien.includes(k.id) ? 'on' : ''}" data-kat="${escH(k.id)}">${escH(k.name)}</button>`).join('')
+      : '<div class="struct-empty">Noch keine Fehlerkategorien festgelegt – unter <a href="einstellungen.html">Einstellungen</a> anlegen.</div>';
+    chipWrap.querySelectorAll('.chip').forEach(c => c.addEventListener('click', ()=>{
+      const id = c.dataset.kat;
+      fehlerkategorien = fehlerkategorien.includes(id) ? fehlerkategorien.filter(x => x !== id) : fehlerkategorien.concat(id);
+      c.classList.toggle('on');
+      scheduleSave();
+    }));
+    const grid = document.getElementById('messwerteGrid');
+    const mg = CONFIG.messgroessen.filter(m => m.aktiv !== false || (messwerte[m.id] !== undefined && messwerte[m.id] !== ''));
+    grid.innerHTML = mg.length
+      ? mg.map(m => `<div><label for="mw_${escH(m.id)}">${escH(m.name)}${m.einheit ? ' [' + escH(m.einheit) + ']' : ''}</label><input type="number" step="any" id="mw_${escH(m.id)}" data-mw="${escH(m.id)}" value="${escH(messwerte[m.id] ?? '')}"></div>`).join('')
+      : '<div class="struct-empty">Noch keine Messgrößen festgelegt – unter <a href="einstellungen.html">Einstellungen</a> anlegen (z. B. Resonanzfrequenz, Impedanz, Leistung).</div>';
+    grid.querySelectorAll('input[data-mw]').forEach(inp => inp.addEventListener('input', ()=>{
+      messwerte[inp.dataset.mw] = inp.value;
+      scheduleSave();
+    }));
+  }
+  const SI3_FELDER = { si3_rpe:'rpe', si3_riso:'riso', si3_ableit:'ableit', si3_geraet:'geraet' };
+  function sicherheit3Anzeigen(){
+    Object.entries(SI3_FELDER).forEach(([id,k])=>{ const el=document.getElementById(id); if(el) el.value = sicherheit3[k] || ''; });
+    const sk = sicherheit.schutzklasse;
+    document.getElementById('si3_sk_text').textContent = sk ? 'SK ' + sk : 'nicht erfasst';
+    document.getElementById('si3_rpe_wrap').style.display = (sk === 'II' || sk === 'III') ? 'none' : '';
+    // Prüfgerät aus Schritt 2 vorschlagen
+    const g = document.getElementById('si3_geraet');
+    if(g && !g.value && sicherheit.geraet) g.placeholder = sicherheit.geraet;
+  }
+  function renderMesswerte3(){
+    const grid = document.getElementById('messwerte3Grid');
+    const mg = CONFIG.messgroessen.filter(m => m.aktiv !== false || (messwerte3[m.id] !== undefined && messwerte3[m.id] !== ''));
+    document.getElementById('mess3Block').style.display = mg.length ? '' : 'none';
+    grid.innerHTML = mg.map(m => `<div><label for="mw3_${escH(m.id)}">${escH(m.name)}${m.einheit ? ' [' + escH(m.einheit) + ']' : ''}</label><input type="number" step="any" id="mw3_${escH(m.id)}" data-mw3="${escH(m.id)}" value="${escH(messwerte3[m.id] ?? '')}"></div>`).join('');
+    grid.querySelectorAll('input[data-mw3]').forEach(inp => inp.addEventListener('input', ()=>{ messwerte3[inp.dataset.mw3] = inp.value; scheduleSave(); }));
+  }
+  function zeigeFreigabeBetrag(){
+    const z = document.getElementById('kvFreigegebenZeile');
+    if(state.freigabeErhalten && state.kvFreigegeben != null){
+      z.style.display = '';
+      document.getElementById('kvFreigegebenAnzeige').textContent = fmtEUR(state.kvFreigegeben) + (state.kvFreigegebenAm ? ' (am ' + new Date(state.kvFreigegebenAm).toLocaleDateString('de-DE') + ')' : '');
+    } else z.style.display = 'none';
+  }
+  section('Schritt 3 – Sicherheitsprüfung nach Instandsetzung', ()=>{
+    Object.entries(SI3_FELDER).forEach(([id,k])=>{
+      ['input','change'].forEach(ev => document.getElementById(id).addEventListener(ev, e=>{ sicherheit3[k] = e.target.value; scheduleSave(); }));
+    });
+  });
+
+  section('Schritt 2 – Sicherheitsprüfung/Freigabe-Nachweis', ()=>{
+    document.getElementById('c2c').addEventListener('change', updateSicherheit);
+    Object.entries(SI_FELDER).forEach(([id,k])=>{
+      document.getElementById(id).addEventListener('input', e=>{ sicherheit[k] = e.target.value; if(k==='schutzklasse'){ sicherheitFelderAnzeigen(); sicherheit3Anzeigen(); } scheduleSave(); });
+      document.getElementById(id).addEventListener('change', e=>{ sicherheit[k] = e.target.value; if(k==='schutzklasse'){ sicherheitFelderAnzeigen(); sicherheit3Anzeigen(); } scheduleSave(); });
+    });
+    Object.entries(FG_FELDER).forEach(([id,k])=>{
+      ['input','change'].forEach(ev => document.getElementById(id).addEventListener(ev, e=>{ freigabe[k] = e.target.value; scheduleSave(); }));
     });
   });
 
@@ -1019,7 +1457,8 @@
   function fehlendeZeiten(){
     return KV_PFLICHT_SCHRITTE.filter(step=>{
       const inp = document.querySelector(`.staff-time[data-step="${step}"]`);
-      return !inp || !Number(inp.value) || Number(inp.value) <= 0;
+      const haupt = inp ? (Number(inp.value) || 0) : 0;
+      return (haupt + extraMinuten(step)) <= 0;
     });
   }
 
@@ -1061,9 +1500,24 @@
       // Kostenvoranschlag für den Kunden: Verkaufspreis (VK), nicht Einkaufspreis (EK) -
       // der EK bleibt intern für den Lagerabgleich erhalten, siehe renderParts().
       const materialCost = ersatzteile.reduce((s,p)=> s + p.qty * (p.vkPreis||0), 0);
-      const laborCost = totalStd * STUNDENLOHN;
-      const kvTotal = materialCost + laborCost;
+      const satz = stundensatz();
+      const laborCost = totalStd * satz;
+      const kvTotal = Math.round((materialCost + laborCost) * 100) / 100;
+      // Weicht der neue KV vom bereits freigegebenen Betrag ab, entscheidet der Nutzer, ob
+      // eine neue Kundenfreigabe nötig ist (Freigabe zurücksetzen) oder sie bestehen bleibt.
+      if(state.freigabeErhalten && state.kvFreigegeben != null && Math.abs(kvTotal - state.kvFreigegeben) >= 0.01){
+        const zuruecksetzen = await showModal({
+          message: 'Achtung: Der Kunde hat ' + fmtEUR(state.kvFreigegeben) + ' freigegeben, der neue KV beträgt ' + fmtEUR(kvTotal) + ' (' + (kvTotal > state.kvFreigegeben ? '+' : '') + fmtEUR(kvTotal - state.kvFreigegeben) + '). Freigabe zurücksetzen – neue Kundenfreigabe einholen?',
+          okText: 'Ja, neue Freigabe nötig', cancelText: 'Nein, Freigabe bleibt'
+        });
+        if(zuruecksetzen){
+          state.freigabeErhalten = false;
+          document.getElementById('freigabeErhalten').checked = false;
+          state.kvFreigegeben = null; state.kvFreigegebenAm = null;
+        }
+      }
       state.kvBetrag = kvTotal;
+      state.kvStundensatz = satz;
 
       if(state.kvDecision !== 'ja'){
         state.kvDecision = 'ja';
@@ -1076,8 +1530,9 @@
       const resultEl = document.getElementById('kvResult');
       resultEl.classList.add('show');
       resultEl.innerHTML =
-        'Material: ' + fmtEUR(materialCost) + ' &nbsp;+&nbsp; Arbeitszeit: ' + totalStd.toFixed(2) + ' Std. × 120 €/Std. = ' + fmtEUR(laborCost) +
-        '<div class="total">Kostenvoranschlag gesamt: ' + fmtEUR(kvTotal) + '</div>';
+        'Material (VK): ' + fmtEUR(materialCost) + ' &nbsp;+&nbsp; Arbeitszeit: ' + totalStd.toFixed(2) + ' Std. × ' + fmtEUR(satz) + '/Std. = ' + fmtEUR(laborCost) +
+        '<div class="total">Kostenvoranschlag gesamt: ' + fmtEUR(kvTotal) + ' netto</div>';
+      zeigeFreigabeBetrag();
 
       updateFlow();
       updateProgress();
@@ -1087,10 +1542,15 @@
 
   function updateBranches(){
     document.getElementById('branch-vorabinfo-ja').classList.toggle('show', state.vorabinfo==='ja');
+    document.getElementById('branch-defekt-ja').classList.toggle('show', state.defekt==='ja');
+    updateSicherheit();
+    updateDefektHint();
     document.getElementById('branch-kv-ja').classList.toggle('show', state.kvDecision==='ja');
     document.getElementById('branch-kv-nein').classList.toggle('show', state.kvDecision==='nein');
     document.getElementById('branch-testok-ja').classList.toggle('show', state.testok==='ja');
     document.getElementById('branch-testok-nein').classList.toggle('show', state.testok==='nein');
+    document.getElementById('branch-vollstaendig-nein').classList.toggle('show', state.vollstaendig==='nein');
+    zeigeEingangsReferenz();
   }
 
   function currentStatus(){
@@ -1103,6 +1563,7 @@
       if(phaseBOpen && state.kvDecision) status = 'In endgültiger Instandsetzung';
       else if(state.kvDecision === 'ja') status = 'Wartet auf Kundenfreigabe (KV)';
       else if(state.kvDecision === 'nein') status = 'In Diagnose (E-Werkstatt)';
+      else if(state.sicherheit2 === 'nein') status = 'Sicherheitsprüfung n.i.O.';
       else if(document.getElementById('c2d').checked || document.getElementById('c2a').checked) status = 'In Werkstattprüfung';
       else if(document.getElementById('c1d').checked) status = 'In Werkstattprüfung';
     }
@@ -1129,27 +1590,78 @@
     card4.classList.toggle('disabled', state.testok !== 'ja');
 
     if(state.testok === 'nein'){
-      document.getElementById('ewLoopBadge').textContent = ewLoops > 0 ? '↩ erneuter Durchlauf (' + ewLoops + '. Instandsetzung)' : '';
+      document.getElementById('ewLoopBadge').textContent = ewLoops > 0 ? '↩ erneuter Durchlauf (' + (ewLoops + 1) + '. Instandsetzung)' : '';
     } else if(state.testok === 'ja'){
       document.getElementById('ewLoopBadge').textContent = '';
     }
 
     bannerShipped.classList.toggle('show', document.getElementById('c4d').checked);
     document.getElementById('statusBadge').textContent = currentStatus();
+    updateAbschluss();
   }
 
+  function extraMinuten(step){ return (zeitenExtra[step] || []).reduce((s, z) => s + (Number(z.minuten) || 0), 0); }
   function computeTotalMinutes(){
     let totalMin = 0;
     document.querySelectorAll('.staff-time').forEach(inp=>{ totalMin += Number(inp.value) || 0; });
+    Object.keys(zeitenExtra).forEach(step => { totalMin += extraMinuten(step); });
     return totalMin;
   }
+  // Weitere Zeiteinträge je Schritt (zweiter Mitarbeiter, erneuter Durchlauf) - die
+  // bestehende Haupt-Zeile bleibt unverändert, Einträge hier werden addiert.
+  function renderZeitenExtra(){
+    document.querySelectorAll('.zeit-extra').forEach(box=>{
+      const step = box.dataset.step;
+      const liste = zeitenExtra[step] || [];
+      box.querySelector('.z-list').innerHTML = liste.map((z, i) =>
+        `<div><span>${escH(z.mitarbeiter || '–')} – ${escH(z.minuten)} Min.${z.datum ? ' <span style="color:var(--muted);">(' + escH(new Date(z.datum).toLocaleDateString('de-DE')) + (z.durchlauf ? ', ' + escH(z.durchlauf) + '. Durchlauf' : '') + ')</span>' : ''}</span><button type="button" data-i="${i}">entfernen</button></div>`
+      ).join('');
+      box.querySelectorAll('.z-list button').forEach(b => b.addEventListener('click', ()=>{
+        zeitenExtra[step].splice(Number(b.dataset.i), 1);
+        renderZeitenExtra(); updateProgress(); scheduleSave();
+      }));
+      const sel = box.querySelector('select');
+      const cur = sel.value;
+      sel.innerHTML = '<option value="">Mitarbeiter…</option>' + mitarbeiterListe.map(n=>`<option value="${escH(n)}">${escH(n)}</option>`).join('');
+      sel.value = cur;
+    });
+  }
+  section('Weitere Zeiteinträge', ()=>{
+    document.querySelectorAll('.staff-row').forEach(row=>{
+      const sel = row.querySelector('.staff-select');
+      if(!sel) return;
+      const step = sel.dataset.step;
+      const box = document.createElement('div');
+      box.className = 'zeit-extra';
+      box.dataset.step = step;
+      box.innerHTML = '<div class="z-title">Weitere Zeiten (anderer Mitarbeiter / erneuter Durchlauf)</div><div class="z-list"></div>' +
+        '<div class="z-add"><select></select><input type="number" min="0" step="5" placeholder="Min."><button type="button">+ Zeit hinzufügen</button></div>';
+      row.insertAdjacentElement('afterend', box);
+      box.querySelector('.z-add button').addEventListener('click', async ()=>{
+        const ma = box.querySelector('select').value;
+        const min = Number(box.querySelector('input').value);
+        if(!ma || !(min > 0)){ await showModal({ message: 'Bitte Mitarbeiter wählen und Minuten (> 0) eintragen.', cancelText: 'Schließen' }); return; }
+        zeitenExtra[step] = zeitenExtra[step] || [];
+        zeitenExtra[step].push({ mitarbeiter: ma, minuten: min, datum: new Date().toISOString(), durchlauf: step === '3' && ewLoops > 0 ? ewLoops + 1 : null });
+        box.querySelector('input').value = '';
+        renderZeitenExtra(); updateProgress(); scheduleSave();
+      });
+    });
+  });
 
   function updateProgress(){
     const boxes = document.querySelectorAll('.card input[type=checkbox]');
-    const total = boxes.length + 2;
+    const total = boxes.length + 9;
     let done = 0;
     boxes.forEach(b=>{ if(b.checked) done++; });
     if(state.vorabinfo) done++;
+    if(state.defekt) done++;
+    if(state.sichtpruefung) done++;
+    if(state.sicherheit2) done++;
+    if(state.funktionstest) done++;
+    if(state.sicherheit3) done++;
+    if(state.endkontrolle) done++;
+    if(state.vollstaendig) done++;
     if(state.testok) done++;
     const pct = Math.round((done/total)*100);
     document.getElementById('progressFill').style.width = pct + '%';
@@ -1163,6 +1675,11 @@
     document.querySelectorAll('.card input[type=checkbox]').forEach(cb=>{
       cb.addEventListener('change', ()=>{
         if(cb.id === 'c2d' && state.testok === null){ /* no-op, kept for status recompute */ }
+        // Komponenten ausgetauscht -> reservierte Teile jetzt vom Lager abbuchen
+        if(cb.id === 'c3f' && cb.checked){
+          const offen = ersatzteile.filter(p => p.gebucht === false);
+          if(offen.length) bucheTeile(offen);
+        }
         // War "Kann KV erstellt werden?" = Nein, ist aber jetzt (Lagerbestand geprüft) die
         // Instandsetzungskosten in der E-Werkstatt ermittelt, wird automatisch auf "Ja"
         // umgeschaltet - ab jetzt läuft es wie beim Ja-Zweig: KV erstellen, Kundenfreigabe
@@ -1181,12 +1698,70 @@
     });
   });
 
+  // ---- Schritt 4: Voraussetzungen für den Abschluss ----
+  // Bereits abgeschlossene Altaufträge (Haken "Versand durchgeführt" schon gesetzt) dürfen
+  // jederzeit nachgedruckt/aktualisiert werden, ohne die neuen Pflichtfelder.
+  function abschlussFehlt(){
+    if(document.getElementById('c4d').checked) return [];
+    const f = [];
+    if(state.testok !== 'ja') f.push('Schritt 3: Test insgesamt i.O.');
+    if(state.sicherheit3 !== 'ja') f.push('Schritt 3: Sicherheitsprüfung nach Instandsetzung i.O.');
+    if(!document.getElementById('c4a').checked || state.endkontrolle !== 'ja') f.push('Endkontrolle durchgeführt und i.O.');
+    if(!document.getElementById('c4b').checked) f.push('Vollständigkeit geprüft (Haken)');
+    if(!state.vollstaendig) f.push('Vollständigkeit Ja/Nein beantwortet');
+    if(state.vollstaendig === 'nein' && !(document.getElementById('ta_abweichung_komponenten').value || '').trim()) f.push('Abweichung bei Vollständigkeit beschrieben');
+    if(!document.getElementById('c4c').checked) f.push('Verpackt & versandfertig');
+    if(!versand.datum) f.push('Versanddatum');
+    if(!versand.art) f.push('Versandart');
+    return f;
+  }
+  function updateAbschluss(){
+    const box = document.getElementById('abschlussCheck');
+    const btn = document.getElementById('printBtn');
+    const abgeschlossen = document.getElementById('c4d').checked;
+    btn.textContent = abgeschlossen ? '✔ Archiv aktualisieren (Nachdruck)' : '✔ Auftrag abschließen & archivieren';
+    if(abgeschlossen){ box.className = 'abschluss-check'; box.innerHTML = ''; return; }
+    const f = abschlussFehlt();
+    box.className = 'abschluss-check ' + (f.length ? 'offen' : 'bereit');
+    box.innerHTML = f.length ? '<b>Für den Abschluss fehlt noch:</b><ul>' + f.map(x=>'<li>'+escH(x)+'</li>').join('') + '</ul>' : '<b>✓ Alle Voraussetzungen erfüllt – Auftrag kann abgeschlossen werden.</b>';
+  }
+  function zeigeEingangsReferenz(){
+    const k = (document.getElementById('ta_komponenten_eingang').value || '').trim();
+    document.getElementById('ref_komponenten').textContent = k || '– keine Komponenten erfasst –';
+    const d = (document.getElementById('ta_defekt_komponenten').value || '').trim();
+    document.getElementById('ref_defekt_wrap').style.display = (state.defekt === 'ja' && d) ? '' : 'none';
+    document.getElementById('ref_defekt').textContent = d;
+  }
+  const V_FELDER = { v_datum:'datum', v_art:'art', v_sendungsnr:'sendungsnr', v_lieferschein:'lieferschein', v_rechnung:'rechnung' };
+  function versandAnzeigen(){ Object.entries(V_FELDER).forEach(([id,k])=>{ const el=document.getElementById(id); if(el) el.value = versand[k] || ''; }); }
+  section('Schritt 4 – Versand/Abschluss', ()=>{
+    Object.entries(V_FELDER).forEach(([id,k])=>{
+      ['input','change'].forEach(ev => document.getElementById(id).addEventListener(ev, e=>{ versand[k] = e.target.value; updateAbschluss(); scheduleSave(); }));
+    });
+    ['ta_komponenten_eingang','ta_defekt_komponenten'].forEach(id => document.getElementById(id).addEventListener('input', zeigeEingangsReferenz));
+    document.getElementById('ta_abweichung_komponenten').addEventListener('input', updateAbschluss);
+    document.getElementById('internPrintBtn').addEventListener('click', ()=> window.print());
+    document.getElementById('protokollBtn').addEventListener('click', async ()=>{
+      await saveNow();
+      window.open('protokoll.html?id=' + encodeURIComponent(auftragId), '_blank');
+    });
+  });
+
   section('Drucken-Button', ()=>{
     document.getElementById('printBtn').addEventListener('click', async ()=>{
+      const fehlt = abschlussFehlt();
+      if(fehlt.length){
+        await showModal({ message: 'Auftrag kann noch nicht abgeschlossen werden. Es fehlt: ' + fehlt.join(' · '), cancelText: 'Schließen' });
+        updateAbschluss();
+        return;
+      }
       const serien = document.getElementById('m_serien').value.trim();
-      const meldung = serien
-        ? 'Der Auftrag wird als abgeschlossen markiert, die Checkliste wird unter der Seriennummer "' + serien + '" im Archiv gespeichert und anschließend gedruckt. Fortfahren?'
-        : 'Es ist noch keine Seriennummer erfasst – die Checkliste kann später nicht über die Seriennummer wiedergefunden werden. Trotzdem als abgeschlossen markieren und drucken?';
+      const nachdruck = document.getElementById('c4d').checked;
+      const meldung = nachdruck
+        ? 'Der Archiveintrag dieses Auftrags wird mit dem aktuellen Stand aktualisiert (der vorherige Stand bleibt als Version erhalten). Fortfahren?'
+        : serien
+          ? 'Der Auftrag wird als abgeschlossen markiert und unter der Seriennummer "' + serien + '" im Archiv gespeichert. Fortfahren?'
+          : 'Es ist noch keine Seriennummer erfasst – der Auftrag kann später nicht über die Seriennummer wiedergefunden werden. Trotzdem abschließen?';
       const ok = await showConfirm(meldung);
       if(!ok) return;
 
@@ -1208,28 +1783,54 @@
       } catch(err){
         jsErrors.push('Checkliste im Archiv speichern: ' + (err && err.message ? err.message : err));
         showJsErrors();
+        return;
       }
-
-      window.print();
+      updateAbschluss();
+      const drucken = await showModal({ message: '✓ Auftrag abgeschlossen und im Archiv gespeichert. Kunden-Prüfprotokoll jetzt öffnen?', okText: 'Prüfprotokoll öffnen', cancelText: 'Später' });
+      if(drucken) window.open('protokoll.html?id=' + encodeURIComponent(auftragId), '_blank');
     });
   });
 
   section('Zurücksetzen-Button', ()=>{
     document.getElementById('resetBtn').addEventListener('click', async ()=>{
-      const ok = await showConfirm('Alle Eingaben DIESES Auftrags zurücksetzen? (Mitarbeiterliste, Lagerbestand sowie gemerkte Fehlerbeschreibungen/Komponenten/Arbeitszeiten sind zentral und bleiben erhalten)');
+      const gebuchte = ersatzteile.filter(p => p && p.id && p.gebucht !== false);
+      const ok = await showConfirm('Alle Eingaben DIESES Auftrags zurücksetzen? Der aktuelle Stand wird vorher als Kopie im Papierkorb gesichert (wiederherstellbar).' +
+        (gebuchte.length ? ' ' + gebuchte.length + ' bereits abgebuchte(s) Ersatzteil(e) werden ins Lager zurückgebucht.' : ''));
       if(!ok) return;
+      try {
+        await saveNow();
+        const r = await apiPost('/api/auftraege/' + encodeURIComponent(auftragId) + '/sicherung', { grund: 'Sicherung vor „Auftrag zurücksetzen" (Auftrag ' + auftragId + ')' });
+        if(!r || !r.ok) throw new Error('Sicherung fehlgeschlagen');
+        for(const p of gebuchte){
+          const b = await apiPost('/api/lager/' + encodeURIComponent(p.id) + '/buchung', { delta: Number(p.qty) || 0, auftragId, grund: 'Rückbuchung: Auftrag zurückgesetzt' });
+          if(b && b.id && LAGER_DB[b.id]) LAGER_DB[b.id].bestand = b.bestand;
+        }
+      } catch(err){
+        await showModal({ message: 'Zurücksetzen abgebrochen – die Sicherung konnte nicht angelegt werden (' + (err && err.message ? err.message : err) + '). Es wurde nichts verändert.', cancelText: 'Schließen' });
+        return;
+      }
       document.querySelectorAll('input[type=text]:not(#m_kunde):not(#m_geraet):not(#m_serien):not(#m_wawi), textarea, input[type=number]').forEach(el=>el.value='');
       document.getElementById('m_kunde').value=''; document.getElementById('m_geraet').value=''; document.getElementById('m_serien').value=''; document.getElementById('m_wawi').value='';
       document.querySelectorAll('input[type=checkbox]').forEach(el=>el.checked=false);
       document.querySelectorAll('.toggle-group button, .seg button').forEach(b=>b.classList.remove('active-ja','active-nein','active-ok','active-bad'));
       document.querySelectorAll('.staff-select').forEach(s=>s.value='');
-      state.vorabinfo=null; state.kvDecision=null; state.freigabeErhalten=false; state.testok=null; state.kvBetrag=0;
+      state.vorabinfo=null; state.defekt=null; state.sichtpruefung=null; state.sicherheit2=null; state.funktionstest=null; state.kvDecision=null; state.freigabeErhalten=false; state.sicherheit3=null; state.testok=null; state.endkontrolle=null; state.vollstaendig=null; state.kvBetrag=0; state.kvFreigegeben=null; state.kvFreigegebenAm=null; state.kvStundensatz=null;
       testSeg = { schall:null, reset:null };
       ewLoops=0;
       ersatzteile = [];
       renderParts();
       fotos = [];
       renderFotos();
+      defektFotos = [];
+      renderDefektFotos();
+      sicherheit = { schutzklasse:'', rpe:'', riso:'', geraet:'' };
+      freigabe = { datum:'', art:'', von:'', notiz:'' };
+      fehlerkategorien = []; messwerte = {};
+      sicherheit3 = { rpe:'', riso:'', ableit:'', geraet:'' }; messwerte3 = {}; zeitenExtra = {};
+      versand = { datum:'', art:'', sendungsnr:'', lieferschein:'', rechnung:'' }; versandAnzeigen(); zeigeEingangsReferenz();
+      sicherheit3Anzeigen(); renderMesswerte3(); renderZeitenExtra(); zeigeFreigabeBetrag();
+      document.getElementById('c2c').disabled = false;
+      sicherheitFelderAnzeigen(); renderStruktur();
       document.getElementById('kvResult').classList.remove('show');
       document.getElementById('kvBetragAnzeige').textContent = '– noch nicht erstellt –';
       document.getElementById('ewLoopBadge').textContent='';
@@ -1256,13 +1857,14 @@
       staff['step'+inp.dataset.step].minuten = inp.value;
     });
     const texts = {};
-    ['ta_fehler_kunde','ta_komponenten_eingang','ta_fehler_techniker','ta_austausch_komponenten','fehlerbildRueck'].forEach(id=>{
+    ['ta_fehler_kunde','ta_komponenten_eingang','ta_defekt_komponenten','ta_fehler_techniker','ta_austausch_komponenten','fehlerbildRueck','ta_abweichung_komponenten'].forEach(id=>{
       const el = document.getElementById(id);
       if(el) texts[id] = el.value;
     });
     return {
       meta: { datum: document.getElementById('m_datum').value },
-      checks, texts, state, ewLoops, staff, ersatzteile, testSeg, fotos,
+      checks, texts, state, ewLoops, staff, ersatzteile, testSeg, fotos, defektFotos,
+      sicherheit, freigabe, fehlerkategorien, messwerte, sicherheit3, messwerte3, zeitenExtra, versand,
       kvResultHtml: document.getElementById('kvResult').classList.contains('show') ? document.getElementById('kvResult').innerHTML : ''
     };
   }
@@ -1308,8 +1910,20 @@
     if(d.state) Object.assign(state, d.state);
     if(typeof d.ewLoops === 'number') ewLoops = d.ewLoops;
     if(d.ersatzteile) ersatzteile = d.ersatzteile;
+    // Altaufträge (vor diesem Update): dort wurde beim Hinzufügen sofort abgebucht -> als
+    // "gebucht" kennzeichnen, damit beim Entfernen korrekt zurückgebucht wird.
+    ersatzteile.forEach(p => { if(p && p.gebucht === undefined) p.gebucht = true; });
     if(d.testSeg) testSeg = d.testSeg;
     if(Array.isArray(d.fotos)) fotos = d.fotos;
+    if(Array.isArray(d.defektFotos)) defektFotos = d.defektFotos;
+    if(d.sicherheit && typeof d.sicherheit === 'object') sicherheit = Object.assign({ schutzklasse:'', rpe:'', riso:'', geraet:'' }, d.sicherheit);
+    if(d.freigabe && typeof d.freigabe === 'object') freigabe = Object.assign({ datum:'', art:'', von:'', notiz:'' }, d.freigabe);
+    if(Array.isArray(d.fehlerkategorien)) fehlerkategorien = d.fehlerkategorien;
+    if(d.messwerte && typeof d.messwerte === 'object') messwerte = d.messwerte;
+    if(d.sicherheit3 && typeof d.sicherheit3 === 'object') sicherheit3 = Object.assign({ rpe:'', riso:'', ableit:'', geraet:'' }, d.sicherheit3);
+    if(d.messwerte3 && typeof d.messwerte3 === 'object') messwerte3 = d.messwerte3;
+    if(d.zeitenExtra && typeof d.zeitenExtra === 'object') zeitenExtra = d.zeitenExtra;
+    if(d.versand && typeof d.versand === 'object') versand = Object.assign({ datum:'', art:'', sendungsnr:'', lieferschein:'', rechnung:'' }, d.versand);
     if(d.staff){
       Object.keys(d.staff).forEach(stepKey=>{
         const step = stepKey.replace('step','');
@@ -1320,7 +1934,7 @@
       });
     }
     // Toggle-Buttons visuell wiederherstellen
-    ['vorabinfo','kvDecision','testok'].forEach(group=>{
+    ['vorabinfo','defekt','sichtpruefung','sicherheit2','funktionstest','kvDecision','sicherheit3','testok','endkontrolle','vollstaendig'].forEach(group=>{
       if(state[group]){
         const btn = document.querySelector(`.toggle-group[data-group="${group}"] button[data-val="${state[group]}"]`);
         setToggle(group, state[group], btn);
@@ -1345,12 +1959,23 @@
     }
     renderParts();
     renderFotos();
+    renderDefektFotos();
+    renderRoster();
+    sicherheitFelderAnzeigen();
+    renderStruktur();
+    sicherheit3Anzeigen();
+    renderMesswerte3();
+    renderZeitenExtra();
+    zeigeFreigabeBetrag();
+    versandAnzeigen();
+    zeigeEingangsReferenz();
   }
 
   // ---- Initialisierung ----
   async function init(){
     let auftrag = null;
     try {
+      try { CONFIG = await apiGet('/api/config'); } catch(_) { /* Einstellungen optional */ }
       const [mitarbeiter, lager, memory, auftragData] = await Promise.all([
         apiGet('/api/mitarbeiter'),
         apiGet('/api/lager'),
@@ -1376,6 +2001,9 @@
     section('Gedächtnis-Funktionen initialisieren', initMemoryUI);
     section('Arbeitszeit-Liste aktualisieren', refreshArbeitszeitListe);
     if(auftrag) section('Gespeicherte Daten anwenden', ()=>applyDaten(auftrag.daten));
+    section('Schritt-2-Strukturfelder', ()=>{ sicherheitFelderAnzeigen(); renderStruktur(); updateSicherheit(); });
+    section('Schritt-3-Strukturfelder', ()=>{ sicherheit3Anzeigen(); renderMesswerte3(); renderZeitenExtra(); zeigeFreigabeBetrag(); });
+    section('Schritt-4-Felder', ()=>{ versandAnzeigen(); zeigeEingangsReferenz(); document.getElementById('noteSatz').textContent = fmtEUR(stundensatz()); updateAbschluss(); });
     section('Datum/Uhrzeit einfügen', setAktuellesDatumWennLeer);
     section('Anzeige aktualisieren', ()=>{ updateBranches(); updateFlow(); updateProgress(); });
     loaded = true;
