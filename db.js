@@ -57,19 +57,39 @@ function defaultData() {
 // ---- Automatische Sicherungskopie bei jedem Programmstart ----
 // Bevor irgendeine Migration läuft, wird die vorhandene Datenbankdatei unverändert nach
 // DATA_DIR/backups/ kopiert. So ist nach jedem Update (neuer Code) der Stand von vorher
-// jederzeit wiederherstellbar. Es werden die letzten 30 Sicherungen behalten.
+// jederzeit wiederherstellbar. Platzschutz (Railway-Volume ist begrenzt, Aufträge mit Fotos
+// machen die Datei groß): max. 10 Sicherungen und zusammen höchstens 150 MB - die jeweils
+// neueste bleibt immer erhalten. Ist die Datei seit der letzten Sicherung unverändert
+// (z. B. reiner Neustart), wird keine weitere Kopie angelegt.
 const BACKUP_DIR = path.join(DATA_DIR, 'backups');
-const BACKUPS_BEHALTEN = 30;
+const BACKUPS_BEHALTEN = 10;
+const BACKUPS_MAX_BYTES = 150 * 1024 * 1024;
 function sicherungAnlegen() {
   if (!fs.existsSync(DATA_FILE)) return;
   try {
     if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR, { recursive: true });
+    const vorhandene = () => fs.readdirSync(BACKUP_DIR).filter(f => /^lutyrep-.*\.json$/.test(f)).sort();
+    const letzte = vorhandene().pop();
+    if (letzte) {
+      const a = fs.readFileSync(DATA_FILE);
+      const b = fs.readFileSync(path.join(BACKUP_DIR, letzte));
+      if (a.equals(b)) return;
+    }
     const stempel = new Date().toISOString().replace(/[:.]/g, '-');
     fs.copyFileSync(DATA_FILE, path.join(BACKUP_DIR, 'lutyrep-' + stempel + '.json'));
-    const alle = fs.readdirSync(BACKUP_DIR).filter(f => /^lutyrep-.*\.json$/.test(f)).sort();
+    let alle = vorhandene();
+    // nach Anzahl kürzen
     alle.slice(0, Math.max(0, alle.length - BACKUPS_BEHALTEN)).forEach(f => {
       try { fs.unlinkSync(path.join(BACKUP_DIR, f)); } catch (_) {}
     });
+    // nach Gesamtgröße kürzen (älteste zuerst, neueste bleibt immer)
+    alle = vorhandene();
+    let summe = alle.reduce((s, f) => s + fs.statSync(path.join(BACKUP_DIR, f)).size, 0);
+    while (summe > BACKUPS_MAX_BYTES && alle.length > 1) {
+      const f = alle.shift();
+      summe -= fs.statSync(path.join(BACKUP_DIR, f)).size;
+      try { fs.unlinkSync(path.join(BACKUP_DIR, f)); } catch (_) {}
+    }
   } catch (e) {
     console.error('[Lutyrep] Sicherungskopie konnte nicht angelegt werden:', e.message);
   }
@@ -217,6 +237,16 @@ module.exports = {
     let newMin = current.mindestbestand ?? null;
     if (mindestbestand !== undefined) newMin = (mindestbestand === null || mindestbestand === '' || isNaN(Number(mindestbestand))) ? null : Number(mindestbestand);
     data.lager[id] = { ...current, bestand: newBestand, ekPreis: newEkPreis, vkPreis: newVkPreis, mindestbestand: newMin };
+    // Manuelle Bestandskorrektur (Lagerseite / Inventur) ebenfalls im Lagerjournal festhalten
+    if (Number(newBestand) !== Number(current.bestand)) {
+      data.lagerbewegungen.push({
+        zeit: new Date().toISOString(), artikelId: id, name: current.name,
+        vorher: Number(current.bestand) || 0, nachher: Number(newBestand) || 0,
+        angefordert: (Number(newBestand) || 0) - (Number(current.bestand) || 0),
+        gebucht: (Number(newBestand) || 0) - (Number(current.bestand) || 0), fehlmenge: 0,
+        auftragId: null, grund: 'Manuelle Korrektur (Bestand direkt gesetzt)'
+      });
+    }
     persist();
     return { ...data.lager[id] };
   },

@@ -71,7 +71,7 @@ Alle Daten liegen in **einer einzigen Datei**: `data/lutyrep.db` (im Lutyrep-Ord
 - `data/` – hier entsteht beim ersten Start die Datenbank-Datei
 
 ## Update 10/2026 (v1.1)
-- **Automatische Sicherung:** Bei jedem Programmstart wird die Datenbank unverändert nach `<DATA_DIR>/backups/` kopiert (letzte 30 bleiben erhalten). Wiederherstellen: Server stoppen, gewünschte Sicherung als `lutyrep.json` zurückkopieren, Server starten.
+- **Automatische Sicherung:** Bei jedem Programmstart wird die Datenbank unverändert nach `<DATA_DIR>/backups/` kopiert (max. 10 Sicherungen bzw. 150 MB, unveränderte Stände werden nicht doppelt gesichert). Wiederherstellen: Server stoppen, gewünschte Sicherung als `lutyrep.json` zurückkopieren, Server starten.
 - **Papierkorb:** „löschen" auf der Übersicht verschiebt Aufträge nur in den Papierkorb (wiederherstellbar). Leere, nie ausgefüllte Aufträge wandern nach 24 Std. automatisch dorthin.
 - **Mindestbestand / Bestellbedarf:** neue Spalte auf der Lagerbestand-Seite; Teile mit Bestand ≤ Mindestbestand erscheinen auf der Übersicht.
 - **Schritt 1 – Defekte Komponenten:** Ja/Nein-Abfrage, bei Ja Beschreibung + max. 2 Fotos.
@@ -85,3 +85,4 @@ Alle Daten liegen in **einer einzigen Datei**: `data/lutyrep.db` (im Lutyrep-Ord
 - **Schritt 4:** Abschluss nur über „Auftrag abschließen & archivieren" und erst, wenn Test, Sicherheitsprüfung, Endkontrolle (i.O.), Vollständigkeit (Abgleich mit Eingang), Verpackung sowie Versanddatum/-art erfasst sind. Bereits abgeschlossene Altaufträge können jederzeit nachgedruckt werden. Pro Auftrag ein Archiveintrag; ein erneuter Abschluss aktualisiert ihn und bewahrt den alten Stand als Version.
 - **Auftrag zurücksetzen:** legt vorher eine vollständige Kopie im Papierkorb an und bucht abgebuchte Teile zurück.
 - **Kunden-Prüfprotokoll (`protokoll.html`):** ohne EK/VK-Preise und interne Notizen, mit Messwerten der Sicherheitsprüfung; KV-Betrag (netto) optional zuschaltbar. Logo: Kompassrose als Platzhalter bis zur offiziellen Datei.
+- **Lager/Archiv:** manuelle Bestandskorrekturen erscheinen im Lagerjournal; Archivsuche auch nach WAWI-Nr.
