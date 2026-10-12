@@ -80,7 +80,7 @@
 
   <div class="search-box">
     <label>Suche (Seriennummer, Kunde oder Gerät)</label>
-    <input type="text" id="searchInput" placeholder="z. B. SN-12345">
+    <input type="text" id="searchInput" placeholder="Seriennummer, WAWI-Nr., Kunde oder Gerät">
   </div>
 
   <table id="listTable">
@@ -174,7 +174,8 @@
     renderListe(alleEintraege.filter(x =>
       (x.serien||'').toLowerCase().includes(q) ||
       (x.kunde||'').toLowerCase().includes(q) ||
-      (x.geraet||'').toLowerCase().includes(q)
+      (x.geraet||'').toLowerCase().includes(q) ||
+      (x.wawi||'').toLowerCase().includes(q)
     ));
   });
 
