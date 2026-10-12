@@ -436,6 +436,20 @@ module.exports = {
     persist();
     return true;
   },
+  // Vollständige Kopie eines Auftrags in den Papierkorb legen (z. B. vor "Auftrag
+  // zurücksetzen"), mit eigener neuer ID - wiederherstellbar als separater Auftrag.
+  sichereAuftragKopie(id, grund) {
+    const a = data.auftraege.find(x => x.id === Number(id));
+    if (!a) return null;
+    const kopie = JSON.parse(JSON.stringify(a));
+    kopie.id = data.nextAuftragId++;
+    kopie.kopieVon = a.id;
+    kopie.geloeschtAm = new Date().toISOString();
+    kopie.loeschGrund = grund || ('Sicherung von Auftrag ' + a.id);
+    data.papierkorb.push(kopie);
+    persist();
+    return kopie.id;
+  },
   listPapierkorb() {
     return [...data.papierkorb]
       .sort((a, b) => new Date(b.geloeschtAm) - new Date(a.geloeschtAm))
@@ -468,10 +482,35 @@ module.exports = {
   },
 
   // ---- Archiv (abgeschlossene, gedruckte Checklisten – nach Seriennummer auffindbar) ----
+  // Ein Auftrag hat genau EINEN Archiveintrag: wird er erneut abgeschlossen/nachgedruckt,
+  // wird der bestehende Eintrag aktualisiert und der vorherige Stand unter "versionen"
+  // aufbewahrt (nichts geht verloren). Bereits vorhandene Doppel-Einträge aus älteren
+  // Versionen bleiben unangetastet.
   addArchiv(entry) {
+    let auftragId = entry.auftragId ?? null;
+    if (auftragId !== null && auftragId !== '' && !isNaN(Number(auftragId))) auftragId = Number(auftragId);
+    if (auftragId === '') auftragId = null;
+    if (auftragId !== null) {
+      const vorhandene = data.archiv.filter(x => x.auftragId !== null && String(x.auftragId) === String(auftragId));
+      if (vorhandene.length) {
+        const a = vorhandene.sort((x, y) => new Date(y.archiviertAm) - new Date(x.archiviertAm))[0];
+        const { versionen, ...alterStand } = a;
+        a.versionen = Array.isArray(versionen) ? versionen : [];
+        a.versionen.push(alterStand);
+        a.serien = (entry.serien || '').trim();
+        a.kunde = entry.kunde || '';
+        a.geraet = entry.geraet || '';
+        a.wawi = entry.wawi || '';
+        a.status = entry.status || '';
+        a.daten = entry.daten || {};
+        a.aktualisiertAm = new Date().toISOString();
+        persist();
+        return a;
+      }
+    }
     const a = {
       id: data.nextArchivId++,
-      auftragId: entry.auftragId ?? null,
+      auftragId,
       serien: (entry.serien || '').trim(),
       kunde: entry.kunde || '',
       geraet: entry.geraet || '',
@@ -487,7 +526,7 @@ module.exports = {
   listArchiv() {
     return [...data.archiv]
       .sort((a, b) => new Date(b.archiviertAm) - new Date(a.archiviertAm))
-      .map(a => ({ id: a.id, auftragId: a.auftragId, serien: a.serien, kunde: a.kunde, geraet: a.geraet, wawi: a.wawi, status: a.status, archiviertAm: a.archiviertAm }));
+      .map(a => ({ id: a.id, auftragId: a.auftragId, serien: a.serien, kunde: a.kunde, geraet: a.geraet, wawi: a.wawi, status: a.status, archiviertAm: a.archiviertAm, aktualisiertAm: a.aktualisiertAm || null, versionen: Array.isArray(a.versionen) ? a.versionen.length : 0 }));
   },
   getArchivEintrag(id) {
     const a = data.archiv.find(x => x.id === Number(id));

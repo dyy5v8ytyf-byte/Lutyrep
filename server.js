@@ -176,6 +176,13 @@ app.put('/api/auftraege/:id', (req, res) => {
 });
 
 // "Löschen" verschiebt den Auftrag in den Papierkorb - er bleibt vollständig erhalten.
+// Sicherungskopie eines Auftrags in den Papierkorb (vor "Auftrag zurücksetzen")
+app.post('/api/auftraege/:id/sicherung', (req, res) => {
+  const neueId = db.sichereAuftragKopie(req.params.id, req.body && req.body.grund);
+  if (!neueId) return res.status(404).json({ error: 'nicht gefunden' });
+  res.json({ ok: true, kopieId: neueId });
+});
+
 app.delete('/api/auftraege/:id', (req, res) => {
   const ok = db.deleteAuftrag(req.params.id);
   if (!ok) return res.status(404).json({ error: 'nicht gefunden' });

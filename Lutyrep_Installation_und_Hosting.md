@@ -82,3 +82,6 @@ Alle Daten liegen in **einer einzigen Datei**: `data/lutyrep.db` (im Lutyrep-Ord
 - **Schritt 3 – KV:** Stundensatz netto, änderbar unter Einstellungen (Standard 120 €). Freigegebener Betrag wird festgehalten; weicht ein neu erstellter KV ab, wird gefragt, ob eine neue Kundenfreigabe nötig ist.
 - **Zeiterfassung:** je Schritt zusätzliche Zeiteinträge (weiterer Mitarbeiter / erneuter Durchlauf), werden addiert.
 - **Schritt 3 – Prüfung:** Sicherheitsprüfung nach Instandsetzung (R_PE, R_ISO, Schutzleiter-/Berührungsstrom, Prüfgerät) und Messwerte; „Test insgesamt i.O." nur bei bestandener Prüfung und i.O.-Einzeltests.
+- **Schritt 4:** Abschluss nur über „Auftrag abschließen & archivieren" und erst, wenn Test, Sicherheitsprüfung, Endkontrolle (i.O.), Vollständigkeit (Abgleich mit Eingang), Verpackung sowie Versanddatum/-art erfasst sind. Bereits abgeschlossene Altaufträge können jederzeit nachgedruckt werden. Pro Auftrag ein Archiveintrag; ein erneuter Abschluss aktualisiert ihn und bewahrt den alten Stand als Version.
+- **Auftrag zurücksetzen:** legt vorher eine vollständige Kopie im Papierkorb an und bucht abgebuchte Teile zurück.
+- **Kunden-Prüfprotokoll (`protokoll.html`):** ohne EK/VK-Preise und interne Notizen, mit Messwerten der Sicherheitsprüfung; KV-Betrag (netto) optional zuschaltbar. Logo: Kompassrose als Platzhalter bis zur offiziellen Datei.
