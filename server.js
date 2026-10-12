@@ -98,6 +98,21 @@ app.post('/api/lager/import', (req, res) => {
   res.json(db.importLager(rows));
 });
 
+// Bestandsbuchung als Differenz (Entnahme/Rückbuchung aus einem Auftrag), mit Journal
+app.post('/api/lager/:id/buchung', (req, res) => {
+  const delta = Number(req.body.delta);
+  if (!Number.isFinite(delta) || delta === 0) return res.status(400).json({ error: 'delta ungültig' });
+  const r = db.bucheLager(req.params.id, delta, { auftragId: req.body.auftragId, grund: req.body.grund });
+  if (!r) return res.status(404).json({ error: 'Artikel nicht gefunden' });
+  res.json(r);
+});
+app.get('/api/lagerbewegungen', (req, res) => {
+  res.json(db.getLagerbewegungen(req.query.artikel));
+});
+app.get('/api/reservierungen', (req, res) => {
+  res.json(db.getReservierungen());
+});
+
 // Bestellbedarf (Artikel mit Mindestbestand, die ihn erreicht/unterschritten haben)
 app.get('/api/bestellbedarf', (req, res) => {
   res.json(db.getBestellbedarf());
@@ -106,6 +121,11 @@ app.get('/api/bestellbedarf', (req, res) => {
 // ---------- Einstellungen (Messgrößen / Fehlerkategorien) ----------
 app.get('/api/config', (req, res) => {
   res.json(db.getConfig());
+});
+// Stundensatz (netto) muss VOR der allgemeinen /:liste-Route stehen
+app.put('/api/config/stundensatz', (req, res) => {
+  if (!db.setStundensatz(req.body.wert)) return res.status(400).json({ error: 'ungültiger Stundensatz' });
+  res.json({ ok: true, stundensatz: db.getConfig().stundensatz });
 });
 app.post('/api/config/:liste', (req, res) => {
   const e = db.addConfigEintrag(req.params.liste, req.body.name, req.body.einheit);

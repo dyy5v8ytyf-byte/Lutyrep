@@ -135,6 +135,10 @@ data.config = data.config && typeof data.config === 'object' ? data.config : {};
 if (!Array.isArray(data.config.messgroessen)) data.config.messgroessen = [];
 if (!Array.isArray(data.config.fehlerkategorien)) data.config.fehlerkategorien = [];
 data.config.nextId = data.config.nextId || 1;
+// Stundensatz (netto, €/Std.) für den Kostenvoranschlag - bisher fest 120 im Programm
+if (typeof data.config.stundensatz !== 'number' || !(data.config.stundensatz > 0)) data.config.stundensatz = 120;
+// Lagerjournal: jede Bestandsbuchung aus einem Auftrag wird protokolliert (wer/wann/warum)
+data.lagerbewegungen = Array.isArray(data.lagerbewegungen) ? data.lagerbewegungen : [];
 Object.values(data.lager).forEach(entry => { if (entry && !('mindestbestand' in entry)) entry.mindestbestand = null; });
 
 // Ein Auftrag gilt als "leer", wenn noch keinerlei Kopfdaten, Texte oder Fotos erfasst wurden
@@ -276,16 +280,84 @@ module.exports = {
   // Bestellbedarf: alle Artikel mit gesetztem Mindestbestand, deren Ist-Bestand den
   // Mindestbestand erreicht oder unterschritten hat. Artikel ohne Mindestbestand (z. B. die
   // große Masse aus dem ERP-Import) werden bewusst nicht gemeldet.
+  // Zusätzlich zählen Reservierungen: Ersatzteile, die in offenen Aufträgen eingeplant, aber
+  // noch nicht verbaut/abgebucht sind (gebucht === false). Reicht der Bestand dafür nicht,
+  // ist das Teil Bestellbedarf - unabhängig davon, ob ein Mindestbestand gepflegt ist.
+  getReservierungen() {
+    const res = {};
+    data.auftraege.forEach(a => {
+      const teile = (a.daten && Array.isArray(a.daten.ersatzteile)) ? a.daten.ersatzteile : [];
+      teile.forEach(p => {
+        if (p && p.id && p.gebucht === false) {
+          res[p.id] = res[p.id] || { menge: 0, auftraege: [], jeAuftrag: {} };
+          res[p.id].menge += Number(p.qty) || 0;
+          res[p.id].jeAuftrag[a.id] = (res[p.id].jeAuftrag[a.id] || 0) + (Number(p.qty) || 0);
+          if (!res[p.id].auftraege.includes(a.id)) res[p.id].auftraege.push(a.id);
+        }
+      });
+    });
+    return res;
+  },
   getBestellbedarf() {
+    const res = this.getReservierungen();
     return Object.values(data.lager)
-      .filter(e => e && e.mindestbestand !== null && e.mindestbestand !== undefined && Number(e.bestand) <= Number(e.mindestbestand))
-      .map(e => ({ id: e.id, nummer: e.nummer, name: e.name, bestand: e.bestand, mindestbestand: e.mindestbestand, fehlmenge: Math.max(0, Number(e.mindestbestand) - Number(e.bestand)) }))
+      .map(e => {
+        if (!e) return null;
+        const bestand = Number(e.bestand) || 0;
+        const reserviert = res[e.id] ? res[e.id].menge : 0;
+        const verfuegbar = bestand - reserviert;
+        const hatMin = e.mindestbestand !== null && e.mindestbestand !== undefined;
+        const unterMin = hatMin && verfuegbar <= Number(e.mindestbestand);
+        const fehltFuerAuftraege = reserviert > bestand;
+        if (!unterMin && !fehltFuerAuftraege) return null;
+        const ziel = hatMin ? Number(e.mindestbestand) : 0;
+        return {
+          id: e.id, nummer: e.nummer, name: e.name, bestand, reserviert, verfuegbar,
+          mindestbestand: hatMin ? e.mindestbestand : null,
+          fehlmenge: Math.max(0, ziel - verfuegbar, reserviert - bestand),
+          grund: fehltFuerAuftraege ? 'fehlt für Aufträge' : 'unter Mindestbestand',
+          auftraege: res[e.id] ? res[e.id].auftraege : []
+        };
+      })
+      .filter(Boolean)
       .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'de', { sensitivity: 'base' }));
+  },
+  // Bestandsbuchung als Differenz (z. B. -2 = Entnahme, +1 = Rückbuchung). Wird auf dem
+  // Server gerechnet statt einen absoluten Wert vom Browser zu übernehmen - so überschreiben
+  // sich zwei gleichzeitig arbeitende Nutzer nicht gegenseitig. Bestand fällt nie unter 0;
+  // was fehlte, wird als "fehlmenge" zurückgemeldet und im Journal vermerkt.
+  bucheLager(id, delta, info) {
+    const e = data.lager[id];
+    if (!e) return null;
+    const d = Number(delta) || 0;
+    const vorher = Number(e.bestand) || 0;
+    const nachher = Math.max(0, vorher + d);
+    const fehlmenge = (vorher + d) < 0 ? -(vorher + d) : 0;
+    e.bestand = nachher;
+    data.lagerbewegungen.push({
+      zeit: new Date().toISOString(), artikelId: id, name: e.name, vorher, nachher,
+      angefordert: d, gebucht: nachher - vorher, fehlmenge,
+      auftragId: info && info.auftragId != null ? Number(info.auftragId) : null,
+      grund: (info && info.grund) ? String(info.grund).slice(0, 200) : ''
+    });
+    persist();
+    return { ...e, fehlmenge };
+  },
+  getLagerbewegungen(artikelId) {
+    const liste = artikelId ? data.lagerbewegungen.filter(b => b.artikelId === artikelId) : data.lagerbewegungen;
+    return liste.slice(-500).reverse();
   },
 
   // ---- Einstellungen: Messgrößen / Fehlerkategorien ----
   getConfig() {
-    return { messgroessen: data.config.messgroessen.map(x => ({ ...x })), fehlerkategorien: data.config.fehlerkategorien.map(x => ({ ...x })) };
+    return { messgroessen: data.config.messgroessen.map(x => ({ ...x })), fehlerkategorien: data.config.fehlerkategorien.map(x => ({ ...x })), stundensatz: data.config.stundensatz };
+  },
+  setStundensatz(wert) {
+    const w = Number(wert);
+    if (!(w > 0) || w > 10000) return false;
+    data.config.stundensatz = Math.round(w * 100) / 100;
+    persist();
+    return true;
   },
   addConfigEintrag(liste, name, einheit) {
     if (!['messgroessen', 'fehlerkategorien'].includes(liste)) return null;
