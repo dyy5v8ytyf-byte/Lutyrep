@@ -69,3 +69,12 @@ Alle Daten liegen in **einer einzigen Datei**: `data/lutyrep.db` (im Lutyrep-Ord
 - `server.js`, `db.js` – der eigentliche Server samt Datenbank-Anbindung
 - `public/` – die Weboberfläche (Übersicht, Reparatur-Checkliste, Lagerbestand-Verwaltung)
 - `data/` – hier entsteht beim ersten Start die Datenbank-Datei
+
+## Update 10/2026 (v1.1)
+- **Automatische Sicherung:** Bei jedem Programmstart wird die Datenbank unverändert nach `<DATA_DIR>/backups/` kopiert (letzte 30 bleiben erhalten). Wiederherstellen: Server stoppen, gewünschte Sicherung als `lutyrep.json` zurückkopieren, Server starten.
+- **Papierkorb:** „löschen" auf der Übersicht verschiebt Aufträge nur in den Papierkorb (wiederherstellbar). Leere, nie ausgefüllte Aufträge wandern nach 24 Std. automatisch dorthin.
+- **Mindestbestand / Bestellbedarf:** neue Spalte auf der Lagerbestand-Seite; Teile mit Bestand ≤ Mindestbestand erscheinen auf der Übersicht.
+- **Schritt 1 – Defekte Komponenten:** Ja/Nein-Abfrage, bei Ja Beschreibung + max. 2 Fotos.
+- **Bearbeitungsmodus ohne Passwort:** Umgebungsvariable `LUTYREP_AUTH=off` schaltet den Login ab. **Nur lokal verwenden, nie auf Railway setzen.**
+- **Schritt 2:** Ergebnis i.O./n.i.O. für Sichtprüfung und Funktionstest; elektrische Sicherheitsprüfung vor Inbetriebnahme (Schutzklasse, R_PE, R_ISO, Prüfgerät) – Funktionstest unter Spannung erst nach bestandener Prüfung; Kundenfreigabe nur mit Nachweis (Datum, Art, entgegengenommen von).
+- **Einstellungen (`einstellungen.html`):** Fehlerkategorien und Messgrößen für Schritt 2 pflegen. Werden leer ausgeliefert; Einträge nur deaktivierbar, nicht löschbar.

@@ -26,7 +26,12 @@ function sicherVergleichen(a, b) {
   if (bufA.length !== bufB.length) return false;
   return crypto.timingSafeEqual(bufA, bufB);
 }
+// Bearbeitungs-/Testmodus: LUTYREP_AUTH=off schaltet den Passwortschutz ab - NUR für
+// lokale Entwicklung gedacht, niemals auf der öffentlichen Railway-Instanz setzen.
+const AUTH_AUS = String(process.env.LUTYREP_AUTH || '').toLowerCase() === 'off';
+if (AUTH_AUS) console.warn('WARNUNG: Passwortschutz ist AUS (LUTYREP_AUTH=off) - nur lokal verwenden!');
 app.use((req, res, next) => {
+  if (AUTH_AUS) return next();
   const auth = req.headers.authorization || '';
   const [scheme, encoded] = auth.split(' ');
   if (scheme === 'Basic' && encoded) {
@@ -79,7 +84,9 @@ app.post('/api/lager', (req, res) => {
 
 app.put('/api/lager/:id', (req, res) => {
   const { bestand, ekPreis, vkPreis } = req.body;
-  const result = db.putLager(req.params.id, bestand, ekPreis, vkPreis);
+  // mindestbestand nur übergeben, wenn im Request enthalten (null = Überwachung aus)
+  const mindestbestand = Object.prototype.hasOwnProperty.call(req.body, 'mindestbestand') ? req.body.mindestbestand : undefined;
+  const result = db.putLager(req.params.id, bestand, ekPreis, vkPreis, mindestbestand);
   if (!result) return res.status(404).json({ error: 'Artikel nicht gefunden' });
   res.json(result);
 });
@@ -89,6 +96,26 @@ app.put('/api/lager/:id', (req, res) => {
 app.post('/api/lager/import', (req, res) => {
   const rows = Array.isArray(req.body.rows) ? req.body.rows : [];
   res.json(db.importLager(rows));
+});
+
+// Bestellbedarf (Artikel mit Mindestbestand, die ihn erreicht/unterschritten haben)
+app.get('/api/bestellbedarf', (req, res) => {
+  res.json(db.getBestellbedarf());
+});
+
+// ---------- Einstellungen (Messgrößen / Fehlerkategorien) ----------
+app.get('/api/config', (req, res) => {
+  res.json(db.getConfig());
+});
+app.post('/api/config/:liste', (req, res) => {
+  const e = db.addConfigEintrag(req.params.liste, req.body.name, req.body.einheit);
+  if (!e) return res.status(400).json({ error: 'ungültig oder bereits vorhanden' });
+  res.json(e);
+});
+app.put('/api/config/:liste/:id', (req, res) => {
+  const ok = db.setConfigAktiv(req.params.liste, req.params.id, req.body.aktiv);
+  if (!ok) return res.status(404).json({ error: 'nicht gefunden' });
+  res.json({ ok: true });
 });
 
 // ---------- Memory (Fehlerbeschreibungen, Komponenten, Arbeitszeiten) ----------
@@ -128,8 +155,20 @@ app.put('/api/auftraege/:id', (req, res) => {
   res.json({ ok: true });
 });
 
+// "Löschen" verschiebt den Auftrag in den Papierkorb - er bleibt vollständig erhalten.
 app.delete('/api/auftraege/:id', (req, res) => {
-  db.deleteAuftrag(req.params.id);
+  const ok = db.deleteAuftrag(req.params.id);
+  if (!ok) return res.status(404).json({ error: 'nicht gefunden' });
+  res.json({ ok: true });
+});
+
+// ---------- Papierkorb ----------
+app.get('/api/papierkorb', (req, res) => {
+  res.json(db.listPapierkorb());
+});
+app.post('/api/papierkorb/:id/wiederherstellen', (req, res) => {
+  const ok = db.restoreAuftrag(req.params.id);
+  if (!ok) return res.status(404).json({ error: 'nicht gefunden' });
   res.json({ ok: true });
 });
 

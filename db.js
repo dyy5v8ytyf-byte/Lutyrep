@@ -54,6 +54,28 @@ function defaultData() {
   return { mitarbeiter: [], lager, lagerSchemaVersion: 2, nextManualLagerId, memory, auftraege: [], nextAuftragId: 1 };
 }
 
+// ---- Automatische Sicherungskopie bei jedem Programmstart ----
+// Bevor irgendeine Migration läuft, wird die vorhandene Datenbankdatei unverändert nach
+// DATA_DIR/backups/ kopiert. So ist nach jedem Update (neuer Code) der Stand von vorher
+// jederzeit wiederherstellbar. Es werden die letzten 30 Sicherungen behalten.
+const BACKUP_DIR = path.join(DATA_DIR, 'backups');
+const BACKUPS_BEHALTEN = 30;
+function sicherungAnlegen() {
+  if (!fs.existsSync(DATA_FILE)) return;
+  try {
+    if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR, { recursive: true });
+    const stempel = new Date().toISOString().replace(/[:.]/g, '-');
+    fs.copyFileSync(DATA_FILE, path.join(BACKUP_DIR, 'lutyrep-' + stempel + '.json'));
+    const alle = fs.readdirSync(BACKUP_DIR).filter(f => /^lutyrep-.*\.json$/.test(f)).sort();
+    alle.slice(0, Math.max(0, alle.length - BACKUPS_BEHALTEN)).forEach(f => {
+      try { fs.unlinkSync(path.join(BACKUP_DIR, f)); } catch (_) {}
+    });
+  } catch (e) {
+    console.error('[Lutyrep] Sicherungskopie konnte nicht angelegt werden:', e.message);
+  }
+}
+sicherungAnlegen();
+
 let data;
 if (fs.existsSync(DATA_FILE)) {
   try {
@@ -102,6 +124,32 @@ data.auftraege = Array.isArray(data.auftraege) ? data.auftraege : [];
 data.nextAuftragId = data.nextAuftragId || (data.auftraege.reduce((m, a) => Math.max(m, a.id || 0), 0) + 1);
 data.archiv = Array.isArray(data.archiv) ? data.archiv : [];
 data.nextArchivId = data.nextArchivId || (data.archiv.reduce((m, a) => Math.max(m, a.id || 0), 0) + 1);
+// Update 10/2026 (nur ergänzend, bestehende Werte bleiben unverändert):
+// - Papierkorb für gelöschte Aufträge (statt endgültigem Löschen)
+// - Mindestbestand je Artikel (für "Bestellbedarf"); null = keine Überwachung
+data.papierkorb = Array.isArray(data.papierkorb) ? data.papierkorb : [];
+// Einstellungen (vorbereitet für Fehlerbild-/Mustererkennung): Messgrößen und Fehler-
+// kategorien werden bewusst LEER ausgeliefert und von wwtec selbst gepflegt. Einträge werden
+// nie gelöscht, nur deaktiviert - damit alte Aufträge ihre Werte/Namen behalten.
+data.config = data.config && typeof data.config === 'object' ? data.config : {};
+if (!Array.isArray(data.config.messgroessen)) data.config.messgroessen = [];
+if (!Array.isArray(data.config.fehlerkategorien)) data.config.fehlerkategorien = [];
+data.config.nextId = data.config.nextId || 1;
+Object.values(data.lager).forEach(entry => { if (entry && !('mindestbestand' in entry)) entry.mindestbestand = null; });
+
+// Ein Auftrag gilt als "leer", wenn noch keinerlei Kopfdaten, Texte oder Fotos erfasst wurden
+// (typisch: "+ Neuer Auftrag" geklickt und dann abgebrochen).
+function istLeererAuftrag(a) {
+  if ((a.kunde || '').trim() || (a.geraet || '').trim() || (a.serien || '').trim() || (a.wawi || '').trim()) return false;
+  if (a.status && a.status !== 'Neuer Auftrag') return false;
+  const d = a.daten || {};
+  if (Array.isArray(d.fotos) && d.fotos.length) return false;
+  if (Array.isArray(d.defektFotos) && d.defektFotos.length) return false;
+  if (Array.isArray(d.ersatzteile) && d.ersatzteile.length) return false;
+  if (d.texts && Object.values(d.texts).some(t => String(t || '').trim())) return false;
+  return true;
+}
+const LEER_AUFRAEUMEN_NACH_MS = 24 * 60 * 60 * 1000;
 
 function persist() {
   const tmp = DATA_FILE + '.tmp';
@@ -149,18 +197,22 @@ module.exports = {
       name: (name || id).trim(),
       bestand: (bestand === undefined || bestand === null || isNaN(Number(bestand))) ? 0 : Number(bestand),
       ekPreis: (ekPreis === undefined || ekPreis === null || ekPreis === '') ? null : Number(ekPreis),
-      vkPreis: (vkPreis === undefined || vkPreis === null || vkPreis === '') ? null : Number(vkPreis)
+      vkPreis: (vkPreis === undefined || vkPreis === null || vkPreis === '') ? null : Number(vkPreis),
+      mindestbestand: null
     };
     persist();
     return { ...data.lager[id] };
   },
-  putLager(id, bestand, ekPreis, vkPreis) {
+  // mindestbestand: undefined = unverändert lassen, null = Überwachung aus, Zahl = setzen
+  putLager(id, bestand, ekPreis, vkPreis, mindestbestand) {
     const current = data.lager[id];
     if (!current) return null;
     const newBestand = (bestand === undefined || bestand === null) ? current.bestand : bestand;
     const newEkPreis = (ekPreis === undefined || ekPreis === null) ? current.ekPreis : ekPreis;
     const newVkPreis = (vkPreis === undefined || vkPreis === null) ? current.vkPreis : vkPreis;
-    data.lager[id] = { ...current, bestand: newBestand, ekPreis: newEkPreis, vkPreis: newVkPreis };
+    let newMin = current.mindestbestand ?? null;
+    if (mindestbestand !== undefined) newMin = (mindestbestand === null || mindestbestand === '' || isNaN(Number(mindestbestand))) ? null : Number(mindestbestand);
+    data.lager[id] = { ...current, bestand: newBestand, ekPreis: newEkPreis, vkPreis: newVkPreis, mindestbestand: newMin };
     persist();
     return { ...data.lager[id] };
   },
@@ -202,13 +254,16 @@ module.exports = {
         if (name) data.lager[id].name = name;
         if (ekPreis !== null) data.lager[id].ekPreis = ekPreis;
         if (vkPreis !== null) data.lager[id].vkPreis = vkPreis;
+        // Mindestbestand nur übernehmen, wenn in der Datei angegeben (Ist-Bestand bleibt unberührt)
+        if (r.mindestbestand !== undefined && r.mindestbestand !== null && r.mindestbestand !== '' && !isNaN(Number(r.mindestbestand))) data.lager[id].mindestbestand = Number(r.mindestbestand);
         result.aktualisiert.push(label);
         changed = true;
       } else {
         const bRaw = (r.bestand === undefined || r.bestand === null || r.bestand === '') ? 0 : Number(r.bestand);
         const bestand = isNaN(bRaw) ? 0 : bRaw;
         const newId = nummer || ('M' + (data.nextManualLagerId++));
-        data.lager[newId] = { id: newId, nummer, name: name || newId, bestand, ekPreis, vkPreis };
+        const minRaw = (r.mindestbestand === undefined || r.mindestbestand === null || r.mindestbestand === '') ? null : Number(r.mindestbestand);
+        data.lager[newId] = { id: newId, nummer, name: name || newId, bestand, ekPreis, vkPreis, mindestbestand: (minRaw === null || isNaN(minRaw)) ? null : minRaw };
         if (!nummer) nameIndex.set(data.lager[newId].name, newId);
         result.neu.push(label);
         changed = true;
@@ -216,6 +271,40 @@ module.exports = {
     });
     if (changed) persist();
     return result;
+  },
+
+  // Bestellbedarf: alle Artikel mit gesetztem Mindestbestand, deren Ist-Bestand den
+  // Mindestbestand erreicht oder unterschritten hat. Artikel ohne Mindestbestand (z. B. die
+  // große Masse aus dem ERP-Import) werden bewusst nicht gemeldet.
+  getBestellbedarf() {
+    return Object.values(data.lager)
+      .filter(e => e && e.mindestbestand !== null && e.mindestbestand !== undefined && Number(e.bestand) <= Number(e.mindestbestand))
+      .map(e => ({ id: e.id, nummer: e.nummer, name: e.name, bestand: e.bestand, mindestbestand: e.mindestbestand, fehlmenge: Math.max(0, Number(e.mindestbestand) - Number(e.bestand)) }))
+      .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'de', { sensitivity: 'base' }));
+  },
+
+  // ---- Einstellungen: Messgrößen / Fehlerkategorien ----
+  getConfig() {
+    return { messgroessen: data.config.messgroessen.map(x => ({ ...x })), fehlerkategorien: data.config.fehlerkategorien.map(x => ({ ...x })) };
+  },
+  addConfigEintrag(liste, name, einheit) {
+    if (!['messgroessen', 'fehlerkategorien'].includes(liste)) return null;
+    const n = String(name || '').trim();
+    if (!n) return null;
+    if (data.config[liste].some(x => x.name.toLowerCase() === n.toLowerCase())) return null;
+    const eintrag = { id: (liste === 'messgroessen' ? 'MG' : 'FK') + (data.config.nextId++), name: n, aktiv: true };
+    if (liste === 'messgroessen') eintrag.einheit = String(einheit || '').trim();
+    data.config[liste].push(eintrag);
+    persist();
+    return { ...eintrag };
+  },
+  setConfigAktiv(liste, id, aktiv) {
+    if (!['messgroessen', 'fehlerkategorien'].includes(liste)) return false;
+    const e = data.config[liste].find(x => x.id === id);
+    if (!e) return false;
+    e.aktiv = !!aktiv;
+    persist();
+    return true;
   },
 
   // ---- Memory (Fehlerbeschreibungen, Komponenten, Arbeitszeiten) ----
@@ -236,6 +325,7 @@ module.exports = {
 
   // ---- Aufträge ----
   listAuftraege() {
+    this.leereAuftraegeAufraeumen();
     return [...data.auftraege]
       .sort((a, b) => new Date(b.aktualisiertAm) - new Date(a.aktualisiertAm))
       .map(a => ({ id: a.id, kunde: a.kunde, geraet: a.geraet, serien: a.serien, wawi: a.wawi, status: a.status, erstelltAm: a.erstelltAm, aktualisiertAm: a.aktualisiertAm }));
@@ -264,9 +354,45 @@ module.exports = {
     persist();
     return true;
   },
-  deleteAuftrag(id) {
+  // Löschen = in den Papierkorb verschieben (Grundsatz "Daten nie verlieren"). Der komplette
+  // Datensatz bleibt erhalten und ist über restoreAuftrag jederzeit wiederherstellbar.
+  deleteAuftrag(id, grund) {
     const idx = data.auftraege.findIndex(x => x.id === Number(id));
-    if (idx >= 0) { data.auftraege.splice(idx, 1); persist(); }
+    if (idx < 0) return false;
+    const [a] = data.auftraege.splice(idx, 1);
+    data.papierkorb.push({ ...a, geloeschtAm: new Date().toISOString(), loeschGrund: grund || 'manuell gelöscht' });
+    persist();
+    return true;
+  },
+  listPapierkorb() {
+    return [...data.papierkorb]
+      .sort((a, b) => new Date(b.geloeschtAm) - new Date(a.geloeschtAm))
+      .map(a => ({ id: a.id, kunde: a.kunde, geraet: a.geraet, serien: a.serien, wawi: a.wawi, status: a.status, geloeschtAm: a.geloeschtAm, loeschGrund: a.loeschGrund }));
+  },
+  restoreAuftrag(id) {
+    const idx = data.papierkorb.findIndex(x => x.id === Number(id));
+    if (idx < 0) return false;
+    const [a] = data.papierkorb.splice(idx, 1);
+    delete a.geloeschtAm; delete a.loeschGrund;
+    // ID-Kollision ausschließen (sollte nie vorkommen, da IDs nie neu vergeben werden)
+    if (data.auftraege.some(x => x.id === a.id)) a.id = data.nextAuftragId++;
+    data.auftraege.push(a);
+    persist();
+    return true;
+  },
+  // Leere Aufträge (siehe istLeererAuftrag), die älter als 24 Std. sind, wandern automatisch in
+  // den Papierkorb - wiederherstellbar, also kein Datenverlust.
+  leereAuftraegeAufraeumen() {
+    const jetzt = Date.now();
+    const kandidaten = data.auftraege.filter(a => istLeererAuftrag(a) && (jetzt - new Date(a.aktualisiertAm || a.erstelltAm).getTime()) > LEER_AUFRAEUMEN_NACH_MS);
+    if (!kandidaten.length) return 0;
+    kandidaten.forEach(a => {
+      const idx = data.auftraege.indexOf(a);
+      data.auftraege.splice(idx, 1);
+      data.papierkorb.push({ ...a, geloeschtAm: new Date().toISOString(), loeschGrund: 'automatisch: leer, nie ausgefüllt' });
+    });
+    persist();
+    return kandidaten.length;
   },
 
   // ---- Archiv (abgeschlossene, gedruckte Checklisten – nach Seriennummer auffindbar) ----
