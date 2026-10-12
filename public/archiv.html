@@ -75,7 +75,7 @@
   <a class="backlink" href="index.html">← zur Auftragsübersicht</a>
   <header>
     <h1>Archiv – abgeschlossene Checklisten</h1>
-    <p>Jede mit „Auftrag abschließen &amp; drucken" abgeschlossene Checkliste wird hier unter ihrer Seriennummer gespeichert.</p>
+    <p>Jede mit „Auftrag abschließen &amp; archivieren" abgeschlossene Checkliste wird hier unter ihrer Seriennummer gespeichert.</p>
   </header>
 
   <div class="search-box">
@@ -151,7 +151,7 @@
   function renderListe(eintraege){
     const tbody = document.getElementById('tbody');
     if(!eintraege.length){
-      tbody.innerHTML = '<tr><td colspan="5" class="empty">Noch keine abgeschlossene Checkliste im Archiv – ein Auftrag landet hier, sobald er über „Auftrag abschließen &amp; drucken" beendet wird.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" class="empty">Noch keine abgeschlossene Checkliste im Archiv – ein Auftrag landet hier, sobald er über „Auftrag abschließen &amp; archivieren" beendet wird.</td></tr>';
       return;
     }
     tbody.innerHTML = eintraege.map(e => `
