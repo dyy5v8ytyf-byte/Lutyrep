@@ -18,7 +18,7 @@ const PORT = process.env.PORT || 3000;
 const LUTYREP_USER = process.env.LUTYREP_USER || '';
 const LUTYREP_PASS = process.env.LUTYREP_PASS || '';
 if (!process.env.LUTYREP_USER || !process.env.LUTYREP_PASS) {
-  console.warn('WARNUNG: LUTYREP_USER/LUTYREP_PASS nicht per Umgebungsvariable gesetzt - Standard-Zugangsdaten aktiv (Benutzername "wwtec"). Bitte ändern!');
+  console.warn('WARNUNG: LUTYREP_USER/LUTYREP_PASS nicht gesetzt - Zugang gesperrt, bis beide Umgebungsvariablen gesetzt sind.');
 }
 function sicherVergleichen(a, b) {
   const bufA = Buffer.from(a);
