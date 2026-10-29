@@ -100,6 +100,8 @@
     <div class="txt" id="bedarfTxt">Bestellbedarf wird geladen…</div>
   </a>
 
+  <div id="wiedergekommenBox"></div>
+
   <div class="filterRow">
     <input type="text" id="suche" placeholder="Suche: WAWI-Nr., Kunde, Gerät, Seriennummer…">
     <select id="statusFilter">
@@ -113,7 +115,7 @@
       <option value="In endgültiger Instandsetzung">In endgültiger Instandsetzung</option>
       <option value="Erneute Instandsetzung nötig">Erneute Instandsetzung nötig</option>
       <option value="Bereit zur Endkontrolle">Bereit zur Endkontrolle</option>
-      <option value="Versendet / Abgeschlossen">Versendet / Abgeschlossen</option>
+      <option value="Wieder in Werkstatt">Wieder in Werkstatt</option>
     </select>
     <span class="count" id="trefferInfo"></span>
   </div>
@@ -155,10 +157,11 @@
 </div>
 
 <script>
-function showConfirm(message){
+function showConfirm(message, okText){
   return new Promise((resolve)=>{
     const overlay = document.getElementById('modalOverlay');
     document.getElementById('modalMsg').textContent = message;
+    document.getElementById('modalOkBtn').textContent = okText || 'In Papierkorb';
     overlay.classList.add('show');
     const okBtn = document.getElementById('modalOkBtn');
     const cancelBtn = document.getElementById('modalCancelBtn');
@@ -212,6 +215,28 @@ async function load(){
   }
   render();
   loadTrash();
+  loadWiedergekommen();
+}
+
+// Erinnerung: Ein neuer Vorgang hat eine Seriennummer, die zu einem bereits archivierten Vorgang passt
+async function loadWiedergekommen(){
+  const box = document.getElementById('wiedergekommenBox');
+  let rows = [];
+  try { rows = await (await fetch('/api/wiedergekommen')).json(); } catch(_) { box.innerHTML = ''; return; }
+  if(!rows.length){ box.innerHTML = ''; return; }
+  box.innerHTML = rows.map(r => `
+    <div style="background:#fff7e6;border:1px solid #f0c36d;border-radius:8px;padding:12px 14px;margin:0 0 14px;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;">
+      <div><b>🔧 Gerät wieder in der Werkstatt?</b><br><small>Seriennummer ${esc(r.archivSerien.join(', '))} war schon abgeschlossen: WAWI ${esc(r.archivWawi) || '–'} · ${esc(r.archivKunde) || '–'} · ${esc(r.archivGeraet) || '–'} (archiviert ${fmtDate(r.archiviertAm)}). Der neue Vorgang ${esc(r.aktivWawi) || '#' + Number(r.aktivId)} ist bereits angelegt.</small></div>
+      <button type="button" data-reaktivieren="${Number(r.archivId)}" style="cursor:pointer;">Alten Vorgang wiederherstellen</button>
+    </div>`).join('');
+  box.querySelectorAll('button[data-reaktivieren]').forEach(b => {
+    b.addEventListener('click', async () => {
+      const ok = await showConfirm('Den archivierten Vorgang wieder in die Übersicht holen? Der Abschluss wird zurückgesetzt, alle Daten bleiben erhalten.', 'Wiederherstellen');
+      if(!ok) return;
+      await fetch('/api/auftraege/' + Number(b.dataset.reaktivieren) + '/reaktivieren', { method:'POST' });
+      load();
+    });
+  });
 }
 
 function render(){
