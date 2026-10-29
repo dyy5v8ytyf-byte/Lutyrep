@@ -1739,7 +1739,7 @@
       ['input','change'].forEach(ev => document.getElementById(id).addEventListener(ev, e=>{ versand[k] = e.target.value; updateAbschluss(); scheduleSave(); }));
     });
     ['ta_komponenten_eingang','ta_defekt_komponenten'].forEach(id => document.getElementById(id).addEventListener('input', zeigeEingangsReferenz));
-    document.getElementById('ta_abweichung_komponenten').addEventListener('input', updateAbschluss);
+    document.getElementById('ta_abweichung_komponenten').addEventListener('input', updateAbschluss); section('Freitext-Speichern', ()=>{ document.querySelectorAll('textarea, input[type=text]').forEach(el=>{ el.addEventListener('input', ()=>scheduleSave()); }); const sichern = ()=>{ if(saveTimer){ clearTimeout(saveTimer); saveTimer = null; saveNow(); } }; document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState === 'hidden') sichern(); }); window.addEventListener('pagehide', sichern); });
     document.getElementById('internPrintBtn').addEventListener('click', ()=> window.print());
     document.getElementById('protokollBtn').addEventListener('click', async ()=>{
       await saveNow();
