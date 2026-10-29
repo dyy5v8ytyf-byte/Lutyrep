@@ -158,10 +158,27 @@ app.get('/api/auftraege', (req, res) => {
   res.json(db.listAuftraege());
 });
 
+// Archivierte Vorgänge und wiedergekommene Geräte (vor /:id, sonst würde "archiv" als ID gelesen)
+app.get('/api/auftraege/archiv', (req, res) => {
+  res.json(db.listArchivierteAuftraege());
+});
+app.get('/api/wiedergekommen', (req, res) => {
+  res.json(db.findeWiedergekommene());
+});
+
 app.get('/api/auftraege/:id', (req, res) => {
   const row = db.getAuftrag(req.params.id);
   if (!row) return res.status(404).json({ error: 'nicht gefunden' });
   res.json(row);
+});
+
+app.post('/api/auftraege/:id/archivieren', (req, res) => {
+  if (!db.archiviereAuftrag(req.params.id)) return res.status(404).json({ error: 'nicht gefunden' });
+  res.json({ ok: true });
+});
+app.post('/api/auftraege/:id/reaktivieren', (req, res) => {
+  if (!db.reaktiviereAuftrag(req.params.id)) return res.status(404).json({ error: 'nicht gefunden oder nicht archiviert' });
+  res.json({ ok: true });
 });
 
 app.post('/api/auftraege', (req, res) => {
