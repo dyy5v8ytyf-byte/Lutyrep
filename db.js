@@ -429,6 +429,7 @@ module.exports = {
   listAuftraege() {
     this.leereAuftraegeAufraeumen();
     return [...data.auftraege]
+      .filter(a => !a.archiviertAm)
       .sort((a, b) => new Date(b.aktualisiertAm) - new Date(a.aktualisiertAm))
       .map(a => ({ id: a.id, kunde: a.kunde, geraet: a.geraet, serien: a.serien, wawi: a.wawi, status: a.status, erstelltAm: a.erstelltAm, aktualisiertAm: a.aktualisiertAm }));
   },
@@ -495,6 +496,54 @@ module.exports = {
     data.auftraege.push(a);
     persist();
     return true;
+  },
+  // ---- Archiv der Vorgänge ----
+  // Abgeschlossene Vorgänge verschwinden aus der Übersicht, bleiben aber vollständig erhalten
+  // und sind über das Archiv jederzeit wiederherstellbar (kein Kopieren, nur Markierung).
+  archiviereAuftrag(id) {
+    const a = data.auftraege.find(x => x.id === Number(id));
+    if (!a) return false;
+    if (!a.archiviertAm) a.archiviertAm = new Date().toISOString();
+    persist();
+    return true;
+  },
+  listArchivierteAuftraege() {
+    return data.auftraege
+      .filter(a => a.archiviertAm)
+      .sort((x, y) => new Date(y.archiviertAm) - new Date(x.archiviertAm))
+      .map(a => ({ id: a.id, kunde: a.kunde, geraet: a.geraet, serien: a.serien, wawi: a.wawi, status: a.status, archiviertAm: a.archiviertAm, aktualisiertAm: a.aktualisiertAm }));
+  },
+  // Vorgang aus dem Archiv zurückholen: zurück in die Übersicht, Abschluss zurückgesetzt,
+  // damit er weiterbearbeitet werden kann (z. B. wenn das Gerät erneut in die Werkstatt kommt).
+  reaktiviereAuftrag(id) {
+    const a = data.auftraege.find(x => x.id === Number(id));
+    if (!a || !a.archiviertAm) return false;
+    delete a.archiviertAm;
+    const jetzt = new Date().toISOString();
+    a.reaktiviertAm = jetzt;
+    a.status = 'Wieder in Werkstatt';
+    a.aktualisiertAm = jetzt;
+    a.daten = a.daten && typeof a.daten === 'object' ? a.daten : {};
+    a.daten.checks = { ...(a.daten.checks || {}), c4d: false };
+    persist();
+    return true;
+  },
+  // Wiedergekommene Geräte: aktive Vorgänge, deren Seriennummer zu einem archivierten Vorgang passt.
+  findeWiedergekommene() {
+    const norm = s => String(s || '').split(/[,;\s]+/).map(x => x.trim().toUpperCase()).filter(Boolean);
+    const archiv = data.auftraege.filter(a => a.archiviertAm);
+    const treffer = [];
+    data.auftraege.filter(a => !a.archiviertAm).forEach(neu => {
+      const nSerien = norm(neu.serien);
+      if (!nSerien.length) return;
+      archiv.forEach(alt => {
+        if (alt.id === neu.id) return;
+        const gemeinsam = norm(alt.serien).filter(s => nSerien.includes(s));
+        if (!gemeinsam.length) return;
+        treffer.push({ aktivId: neu.id, aktivWawi: neu.wawi, aktivStatus: neu.status, aktivErstelltAm: neu.erstelltAm, archivId: alt.id, archivWawi: alt.wawi, archivKunde: alt.kunde, archivGeraet: alt.geraet, archivStatus: alt.status, archivSerien: gemeinsam, archiviertAm: alt.archiviertAm });
+      });
+    });
+    return treffer;
   },
   // Leere Aufträge (siehe istLeererAuftrag), die älter als 24 Std. sind, wandern automatisch in
   // den Papierkorb - wiederherstellbar, also kein Datenverlust.
