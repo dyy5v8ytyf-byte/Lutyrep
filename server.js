@@ -15,8 +15,8 @@ const PORT = process.env.PORT || 3000;
 // auf Railway gesetzt). Ohne gesetzte Variablen gilt ein Standard-Login (siehe Warnung
 // unten) - bitte bei Erstinbetriebnahme unbedingt ändern, sonst kennt jeder das Passwort,
 // der diesen Code irgendwo sieht.
-const LUTYREP_USER = process.env.LUTYREP_USER || 'wwtec';
-const LUTYREP_PASS = process.env.LUTYREP_PASS || 'wwtec2026';
+const LUTYREP_USER = process.env.LUTYREP_USER || '';
+const LUTYREP_PASS = process.env.LUTYREP_PASS || '';
 if (!process.env.LUTYREP_USER || !process.env.LUTYREP_PASS) {
   console.warn('WARNUNG: LUTYREP_USER/LUTYREP_PASS nicht per Umgebungsvariable gesetzt - Standard-Zugangsdaten aktiv (Benutzername "wwtec"). Bitte ändern!');
 }
@@ -41,7 +41,7 @@ app.use((req, res, next) => {
     if (sepIdx !== -1) {
       const user = decoded.slice(0, sepIdx);
       const pass = decoded.slice(sepIdx + 1);
-      if (sicherVergleichen(user, LUTYREP_USER) && sicherVergleichen(pass, LUTYREP_PASS)) {
+      if (LUTYREP_USER && LUTYREP_PASS && sicherVergleichen(user, LUTYREP_USER) && sicherVergleichen(pass, LUTYREP_PASS)) {
         return next();
       }
     }
