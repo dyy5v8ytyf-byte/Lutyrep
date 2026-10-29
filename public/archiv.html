@@ -83,6 +83,8 @@
     <input type="text" id="searchInput" placeholder="Seriennummer, WAWI-Nr., Kunde oder Gerät">
   </div>
 
+  <div id="vorgangBox"></div>
+
   <table id="listTable">
     <thead>
       <tr><th>Seriennummer</th><th>Kunde</th><th>Gerät</th><th>Status</th><th>Archiviert am</th></tr>
@@ -146,6 +148,26 @@
     const res = await fetch('/api/archiv');
     alleEintraege = await res.json();
     renderListe(alleEintraege);
+    ladeVorgaenge();
+  }
+
+  // Abgeschlossene Vorgänge, die aus der Übersicht ausgeblendet sind - wiederherstellbar
+  async function ladeVorgaenge(){
+    const box = document.getElementById('vorgangBox');
+    let rows = [];
+    try { rows = await (await fetch('/api/auftraege/archiv')).json(); } catch(_) { box.innerHTML = ''; return; }
+    if(!rows.length){ box.innerHTML = ''; return; }
+    box.innerHTML = '<h3 style="margin:0 0 8px;">Ausgeblendete Vorgänge (' + rows.length + ')</h3>' +
+      '<table><thead><tr><th>WAWI-Nr.</th><th>Kunde</th><th>Gerät</th><th>Seriennummer</th><th>Archiviert am</th><th></th></tr></thead><tbody>' +
+      rows.map(r => '<tr><td>' + esc(r.wawi) + '</td><td>' + esc(r.kunde) + '</td><td>' + esc(r.geraet) + '</td><td>' + esc(r.serien) + '</td><td>' + fmtDate(r.archiviertAm) + '</td>' +
+        '<td><button type="button" data-wieder="' + Number(r.id) + '">in Übersicht wiederherstellen</button></td></tr>').join('') +
+      '</tbody></table>';
+    box.querySelectorAll('button[data-wieder]').forEach(b => {
+      b.addEventListener('click', async () => {
+        await fetch('/api/auftraege/' + Number(b.dataset.wieder) + '/reaktivieren', { method:'POST' });
+        ladeVorgaenge();
+      });
+    });
   }
 
   function renderListe(eintraege){
