@@ -1760,7 +1760,7 @@
       const meldung = nachdruck
         ? 'Der Archiveintrag dieses Auftrags wird mit dem aktuellen Stand aktualisiert (der vorherige Stand bleibt als Version erhalten). Fortfahren?'
         : serien
-          ? 'Der Auftrag wird als abgeschlossen markiert und unter der Seriennummer "' + serien + '" im Archiv gespeichert. Fortfahren?'
+          ? 'Der Auftrag wird als abgeschlossen markiert und unter der Seriennummer "' + serien + '" im Archiv gespeichert. Er verschwindet dann aus der Übersicht und bleibt im Archiv wiederherstellbar. Fortfahren?'
           : 'Es ist noch keine Seriennummer erfasst – der Auftrag kann später nicht über die Seriennummer wiedergefunden werden. Trotzdem abschließen?';
       const ok = await showConfirm(meldung);
       if(!ok) return;
@@ -1780,13 +1780,14 @@
           status: currentStatus(),
           daten: collectDaten()
         });
+        await apiPost('/api/auftraege/' + encodeURIComponent(auftragId) + '/archivieren', {});
       } catch(err){
         jsErrors.push('Checkliste im Archiv speichern: ' + (err && err.message ? err.message : err));
         showJsErrors();
         return;
       }
       updateAbschluss();
-      const drucken = await showModal({ message: '✓ Auftrag abgeschlossen und im Archiv gespeichert. Kunden-Prüfprotokoll jetzt öffnen?', okText: 'Prüfprotokoll öffnen', cancelText: 'Später' });
+      const drucken = await showModal({ message: '✓ Auftrag abgeschlossen, im Archiv gespeichert und aus der Übersicht ausgeblendet (im Archiv wiederherstellbar). Kunden-Prüfprotokoll jetzt öffnen?', okText: 'Prüfprotokoll öffnen', cancelText: 'Später' });
       if(drucken) window.open('protokoll.html?id=' + encodeURIComponent(auftragId), '_blank');
     });
   });
